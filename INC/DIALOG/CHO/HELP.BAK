@@ -1,0 +1,175 @@
+;help.asm
+
+HelpMenu:
+
+;смещение на таблицу указателей вызываемого из меню кода
+.pCodsTbl dd .CodsPtrsTbl
+
+;смещение на таблицу текстовых строк соответствующих пунктам меню
+.pStrTbl dd .StrsTbl
+
+.cItems dd 7 ;число items пунктов меню (всего|total)
+
+.SizeStr dd 27 ; size of 1 text string
+
+.PosW dd 16 ; position of text window (*2)
+
+.ActiveItem dd 1 ;текущая строка
+
+.colorNotActivItem dd 7;цвет неактивных пунктов меню
+
+.colorActivItem dd 23;цвет активных пунктов меню
+
+.StrsTbl:
+db ' 1 - Help Exit ---------- ',0
+db ' 2 - Save Document ------- ',0
+db ' 3 - Exit to OS ---------- ',0
+db ' 4 - Copy&Paste ---------- ',0
+db ' 5 - Swith Video Mode ---- ',0
+db ' 6 - F3 key -------------- ',0
+db ' 7 - Cut Strings --------- ',0
+
+
+;-------------------------------------------------------------------------------
+.CodsPtrsTbl:
+dw .item1
+dw .item2
+dw .item3
+dw .item4
+dw .dum ;действие по умолчанию
+dw .dum ;действие по умолчанию
+dw .dum ;действие по умолчанию
+
+;-------------------------------------------------------------------------------
+.dum:
+ret
+;--------
+;      mov      esi , dword .saveText
+.item:
+;clear back area
+       mov      edi,dword [VideoBufMemory]
+       mov      ax,0720h
+       mov      ecx,1000
+.l1:
+       mov      [edi],dword eax
+       add      edi,4
+       dec      ecx
+       jnz      .l1
+
+       mov      edi,dword [VideoBufMemory]
+;print topic ,start on 10th line
+       add      edi,dword 160*10
+;       mov      esi , dword .saveText
+       call     .PrintHelpTopicText
+       ret
+
+.item1:
+      mov      esi , dword .ExitHelpText
+call .item
+       ret
+
+.ExitHelpText:
+db 'Выход из помощи <ESC> . ' ,0
+
+;----
+
+
+;--------
+.item2:
+;clear back area
+       mov      edi,dword [VideoBufMemory]
+       mov      ax,0720h
+       mov      ecx,1000
+.l331:
+       mov      [edi],dword eax
+       add      edi,4
+       dec      ecx
+       jnz      .l331
+
+       mov      edi,dword [VideoBufMemory]
+;print topic ,start on 10th line
+       add      edi,dword 160*10
+       mov      esi , dword .saveText
+       call     .PrintHelpTopicText
+
+       ret
+.saveText:
+db 'Сохранение изменённого текста возможно '
+db 'только с одновременным выходом из программы при нажатии <F2>'
+db '. Потом запускаем редактор снова - курсор будет там же где и был',0
+
+;----
+
+
+.item3:
+;clear back area
+       mov      edi,dword [VideoBufMemory]
+       mov      ax,0720h
+       mov      ecx,1000
+.l1_3:
+       mov      [edi],dword eax
+       add      edi,4
+       dec      ecx
+       jnz      .l1_3
+
+       mov      edi,dword [VideoBufMemory]
+;print topic ,start on 10th line
+       add      edi,dword 160*10
+       mov      esi , dword .escText
+       call     .PrintHelpTopicText
+
+       ret
+
+
+.escText:
+db 'Выход из программы без сохранения изменений в тексте - '
+db 'всегда при нажатии <ESC>.'
+db 'Если запускаем редактор снова - курсор будет там где был,'
+db 'при посленднем сохранении. Если только вы работаете с несколькими '
+db 'файлами текстов одновременно - запоминается посленний сохранённый.'
+db 'Место хранения координат курсора в памяти и стирается при откл. питания.',0
+
+;----
+.item4:
+;clear back area
+       mov      edi,dword [VideoBufMemory]
+       mov      ax,0720h
+       mov      ecx,1000
+.l41:
+       mov      [edi],dword eax
+       add      edi,4
+       dec      ecx
+       jnz      .l41
+
+       mov      edi,dword [VideoBufMemory]
+;print topic ,start on 10th line
+       add      edi,dword 160*10
+       mov      esi , dword .CopyPastText
+       call     .PrintHelpTopicText
+
+       ret
+.CopyPastText:
+db 'Копирование и вставка текста возможна только строками . Для выделения '
+db 'нужных строк текста - стрелка вниз и шифт. Вставка  -  <F5>.'
+db ' Строки из буфера сохраняются на жест. диске, если существует файл -'
+db ' c:\tmp\emd.tmp . Можно переносить текст из файла в файл' ,0
+
+;----
+
+
+
+
+;-----
+;print topic
+.PrintHelpTopicText:
+       mov      al,byte [esi]
+       inc      esi
+       mov      ah,7
+       mov      word [edi],ax
+       add      edi,dword 2
+       test     al,al
+       jnz      .PrintHelpTopicText
+
+       ret
+
+;EOF
