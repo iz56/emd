@@ -75,8 +75,8 @@
  
 .OpenFile:
  
-       mov      dx, word [PtrNameFileText];указатель на имя файла
-       mov      edi, dword [StartMemory];указатель - куда загружать
+       mov      dx, word [PtrNameFileText]
+       mov      edi, dword [StartMemory] ;save all here
  
        call     ReadOperation ;read.asm
  
