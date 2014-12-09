@@ -85,7 +85,7 @@ GoToData: ;search for dd,db,dw,label:
        xor      ecx,ecx
        mov      cl,2 ;delay
 .l2:
-       hlt
+;       hlt
        dec      cx
        jnz      .l2
        popa
@@ -319,9 +319,7 @@ TestAlToEndOfWord:
 .saveEsi dd 0
 .tableOfChs db ' :;,.[]{}()*/!@#$%&=+-?|',0
 ;----------------/
- 
- 
-;----------\
+;;;
 TestForData: ;ebx=ptr,esi=orig str ptr
        call     .PushAll
  
@@ -386,23 +384,36 @@ cmp ax,':;'
        jz       .ok
        jmp      .noOk
 .okEndWord:
+ 
+;--\
        mov      eax,dword [ebx]
-cmp eax,' dd '
+       mov      ebx,dword .tableWordsData
+       mov      cx,6
+.nextCmp:
+       cmp      eax,dword [ebx]
        jz       .ok
-cmp eax,' db '
-       jz       .ok
-cmp eax,' dw '
-       jz       .ok
+       add      ebx,4
+       dec      cx
+       jnz      .nextCmp
+;--/
  
 .noOk:
        call     .PopAll
        stc
-       ret ;-----------------exit[1]
+       ret      ;-----------------exit[1]
  
 .ok:
        call     .PopAll
        clc
-       ret ;-----------------exit[2]
+       ret      ;-----------------exit[2]
+ 
+.tableWordsData: ;here fasm lang specifies
+db ' rb '
+db ' rw '
+db ' rd '
+db ' db '
+db ' dw '
+db ' dd '
  
 .PushAll:
        mov      dword [.saveRegs],eax
@@ -411,7 +422,7 @@ cmp eax,' dw '
        mov      dword [.saveRegs+12],edi
        mov      dword [.saveRegs+16],esi
        mov      dword [.saveRegs+20],ecx
-       ret ;-----------------exit
+       ret      ;-----------------exit
  
 .PopAll:
        mov      eax,dword [.saveRegs]
@@ -421,7 +432,7 @@ cmp eax,' dw '
        mov      esi,dword [.saveRegs+16]
        mov      ecx,dword [.saveRegs+20]
  
-       ret ;-----------------exit
+       ret      ;-----------------exit
  
 .saveRegs dd 0,0,0,0,0,0,0
 ;----------/
