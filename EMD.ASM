@@ -1,10 +1,10 @@
 ;emd.asm
-;v1.70 (size 21925 bytes) [25/11/2014]
+;v1.71 (size 21941 bytes) [09/12/2014]
  
 ;x86 cpu real & unreal mode cod
 ;/for fasm (flat assembler version 1.20)/
  
-;macros files
+;macroses
        include  'inc\const.asm'
        include  'inc\macro.asm'
        include  'inc\video.asm'
@@ -33,23 +33,24 @@
  
        call     DetectMemory ;inc/detectm.asm
        cmp      dword eax,MEMORY_MIN
-       jb       quit
+       jb       quit ;----exit[x]
  
        mov      [EndMemory],dword eax
  
        cld
-       call     FlatrmInit
+       call     FlatrmInit  ;set CPU to unreal mode
  
-;flat real mode CPU cod
  
-;вычисляем размер доступной памяти
+;flat real mode CPU cod start here :)
+ 
+;get size of memory
        call     MemChk ;inc/memch.asm
  
 ;scan command line for a file name
        call     ScanCmd ;inc/scancmd.asm
-       jc       quit
+       jc       quit ;----exit[x]
  
-       mov      [PtrNameFileText],dx
+       mov      [PtrNameFileText],dx ;save ptr to file name
  
 ;create file
        mov      ah,5bh
@@ -67,34 +68,33 @@
        mov      dx,word [PtrNameFileText]
        mov      ah,41h
        int      21h
-; jc .ErrorDeleteFile
        jc       quit
  
        mov      [FlagNewFile],byte 1
        jmp      new_file
  
 .OpenFile:
- 
-       mov      dx, word [PtrNameFileText]
-       mov      edi, dword [StartMemory] ;save all here
+       mov      dx, word [PtrNameFileText] ;dx=ptr to file name
+       mov      edi, dword [StartMemory] ;read to memory start from [edi]
  
        call     ReadOperation ;read.asm
  
-;eax = error cod|zero if not error
-       mov      [CodError],dword eax ;помещаем код ошибки
+;eax = error cod,  zero if not error
+       mov      [CodError],dword eax ;save err cod
        test     eax,eax
-       jnz      quit
+       jnz      quit ;-----exit[x]
  
        cmp      eax,dword 0
-       jnz      quit
+       jnz      quit ;-----exit[x]
+ 
  
        mov      [SizeFile],dword ecx
  
        call     DisplayReadingBytes ;inc\drbytes.asm
        call     WaitPressAnyKey
  
-;обрабатывает текст
-;разворачивает в массив строк фиксированной длины 80 символов
+;processing text
+;add spaces to lines to 80
        call     FormText ;inc\form.asm
  
 ;print welcom screen
@@ -112,7 +112,7 @@ new_file:
  
 intro_0:
  
-;очищаем память после конца текста (нужно если весь текст меньше экрана)
+;erase memory into end text (for del trash from screen)
        call     EraseMemory ;inc\erase.asm
  
        unpackFont
@@ -124,7 +124,7 @@ intro_0:
        mov      fs,ax
 ;fs = 0, gs = 0x0b800
  
-;если в имени файла .asm,0
+;if file name end  ".asm,0"
        mov      si,[PtrNameFileText]
 .l1:
        mov      al,[si]
@@ -141,18 +141,17 @@ db 'asm',0
 .checkAsm:
        inc      si
        mov      eax,dword [si]
-       cmp      eax, dword [.AsmTxtStr] ;сравниваем с расширением
+       cmp      eax, dword [.AsmTxtStr] ;compare it
        jnz      .notAsmText
  
-;устанавливаем флаг для включения подсветки синтаксиса
+;set light syntax flag ON
        mov      byte [FlagModeColor],1
  
 .notAsmText:
  
 ;+
-;загружаем позицию курсора
-;если размер форматированного текста
-;совпадает с тем ,что был в памяти
+;if size of text = last start program text
+;then load position of cursor
 ;fs=0
  
 mov dword eax,[fs:0+04f0h]
@@ -168,12 +167,12 @@ not_set_x_y:
 ; -
  
  
-;если текста нет создать пустую строку
+;create empty line, if text not exist
        cmp      dword [SizeTextFormatted],0
        jnz      NextKey
  
        mov      ebx,[StartMemory]
-       mov      eax,0x020202020
+       mov      eax,0x020202020  ;4 spaces
        mov      cx,CHAR_ON_LINE/4
 .l1:
        mov      [ebx],dword eax
@@ -183,8 +182,7 @@ not_set_x_y:
        mov      dword [SizeTextFormatted],CHAR_ON_LINE
  
  
- 
-; START - main program loop - цикл редактора
+; START - main program loop here
 NextKey:
  
 ;call StartProf
@@ -193,14 +191,13 @@ NextKey:
 ;call EndProf
 NoRedraw:
  
- 
        mov      esi,dword [VideoBufMemory]
        call     DrawPage
  
        cmp      [VideoMode],dword 3
        jnz      .vesa
  
-;------------------cursor---------
+;------------------cursor\
        mov      bx,0
        mov      bl,[x]
        xor      eax,eax
@@ -215,16 +212,9 @@ NoRedraw:
        inc      ax
        mov      ah, bl
        out      dx, ax
+;------------------cursor/
  
-.vesa: ;курсор в гр. реж. рисуем в др. месте
- 
-;------------------cursor------------------
-; mov ah,02h - bios servis оставлено для совместимости
-; mov bh,0
-; mov dh,[y]
-; mov dl,[x]
-; int 10h
-;------------------------------------------
+.vesa: ;if vesa - draw cursor not here
  
 NoRedraw_0:
        cmp      byte [Replay.f_OldKey],0
@@ -239,9 +229,9 @@ NoRedraw_0:
        call     AutoCompletePushChar ;inc/auto/auto.asm
  
 ;------------getkey--------------\
-;обращаемся к области данных BIOS
-;читаем буфер клавиатуры
-;ожидаем нажатие клавиши
+;get data from BIOS
+;read KBD buffer directly
+;wait pressed any key
        mov      dword [CountWait],0
  
  
@@ -249,7 +239,9 @@ NoRedraw_0:
  
 ;-hide-cursor--1\
        mov      dword [F_waitHideCursor],1
-       mov      dword [waitHideCursor],HIDE_CURSOR_TIME
+       mov     eax, dword [waitHideCursorValue]
+ 
+       mov      dword [waitHideCursor],eax ;HIDE_CURSOR_TIME
 ;-hide-cursor--1/
  
  
@@ -296,14 +288,15 @@ wait_kbd:
  
 .noClock:
 ;</clock>
-hlt ;остужаем процессор :)
+.hltSet:
+hlt ;save CPU power :)
 ; nop
        inc      dword [CountWait]
 cmp word bx,[fs:0+041ch]
        jz       wait_kbd
  
 NoWaitKBD:
-;тотально считаем нажатия
+;all press keys here
        inc      dword [CountPressKbdTotal]
  
 mov word ax,[fs:0+bx+0400h]
@@ -343,11 +336,11 @@ mov [fs:0+041ah],word bx
 key_repeat:
  
 ;+
-;здесь проверяем нажатие клавиш Shift
-;и устанавливаем FlagKeyShift
+; Shift ?
+;than set FlagKeyShift=ON
        mov      dx,ax ;push ax
        mov      [FlagKeyShift],byte 0
-;флаг состаяния клавиатуры (BIOS data area)
+;flag KBD (BIOS data area)
 mov al,byte [fs:0+00417h]
        shl      al,6
        cmp      al,0
@@ -358,7 +351,7 @@ mov al,byte [fs:0+00417h]
 ;-
  
        mov      dx,word [FlagKeyShift]
-; mov dh,[FlagTextSelect] - переменные друг за другом
+; mov dh,[FlagTextSelect] - order vars
        cmp      dx,0
        jz       .ldd2
  
@@ -604,7 +597,6 @@ set_FlagModeColor:
  
  
 ;---------------------------------------------------------------------------
-;переключатель вставки - замены ввода
        KEY_INSERT_ON = 1
        KEY_INSERT_OFF = 0
 KeyInsert:
@@ -622,14 +614,12 @@ InsertKeyStatus db 0 ;0=enter 1=insert
 KeySpecMenu: ;F7
  
        mov      bx, F7Menu
-       call     DrawMenu ;жертва рефакторинга
- 
+       call     DrawMenu
        jmp      NextKey
  
  
- 
 F8VideoMode:
-;переключение между гр. и текст видео-режимом
+;swith video modes
  
        mov      al,[FlagKeyShift]
        test     al,al
@@ -651,10 +641,9 @@ F8VideoMode:
 ;sub eax,dword 0x00010101
 ;mov dword [Lighit],dword eax
  
- 
 .notShift:
  
-;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++|
+;\
        cmp      [VideoMode],dword 3
        jnz      .vesa
        mov      [VideoMode],dword 1
@@ -664,34 +653,29 @@ F8VideoMode:
        mov      [VideoLinear], dword 0
        call     SetTxtVMode ;vesa16.asm
        jmp      NextKey
-;----------------------------------------------------------------|
+;/
  
-;окно помощи
+ 
 KeyHelpMenu:
-       mov      bx,HelpMenu ;какое меню рисовать
+       mov      bx,HelpMenu ;dx=ptr to menu description
        call     DrawMenu
        jmp      NextKey
  
  
-;---------
 F3GotoLabel:
        call     GotoLabel ;inc\goto.asm
        jmp      NextKey
-;---------
- 
-;---------------------------------------------------------------------------
  
  
-;вставляем текст из text_buf
+;enter text lines from text_buf
 actionEnterTextBuffer:
        call     EnterTextBuffer ;inc\keys\f5.asm
        jc       close
        jmp      NextKey
  
  
-;---------------------------------------------------------------------------
-;обрабатываем нажатие клавиш перемещения курсора
-;меняем переменные x,y
+;cursor keys here
+;use x,y , x-char pos in line , y - line pos in screen
 decx:
        mov      al,[x]
        cmp      al,0
@@ -700,14 +684,14 @@ decx:
        jmp      NoRedraw
 incx:
        mov      al,[x]
-       cmp      al,79
+       cmp      al,80-1
        jz       down_cur
        inc      [x]
-       jmp      NoRedraw;NextKey
+       jmp      NoRedraw
 down_cur:
        mov      byte [x],0
 incy:
-;если конец текста
+;if end text
        mov      ebx,[IndexPageActive]
        xor      eax,eax
        mov      al,[y]
@@ -725,8 +709,8 @@ incy:
        mov      [y],al
        add      dword [IndexPageActive],CHAR_ON_LINE
        jmp      NextKey
-decy:
  
+decy:
        mov      al,[y]
        cmp      al,0
        jnz      dodecy
@@ -736,11 +720,12 @@ decy:
        sub      eax,CHAR_ON_LINE
        mov      [IndexPageActive],eax
        jmp      NextKey
+ 
 dodecy:
        dec      [y]
        jmp      NoRedraw
-;---------------------------------------------------------------------------
-;перемещение курсора в конец текста в строке
+ 
+;set cursor to end of line
 end_c:
        mov      ebx,[StartMemory]
        add      ebx,[IndexPageActive]
@@ -748,13 +733,11 @@ end_c:
        mov      al,[y]
        imul     ax,CHAR_ON_LINE
        add      ebx,eax
-       mov      esi,ebx ;в esi адрес начала строки в памяти
-       add      esi,79 ;теперь конца
-       mov      cl,81;79
+       mov      esi,ebx ; esi = ptr to start of line into memory
+       add      esi,80-1
+       mov      cl,80+1
  
- 
- 
-check_size_of_line: ;цикл подсчета пробелов от конца строки
+check_size_of_line: ;get spaces count from end of line
        mov      al,[esi]
        dec      esi
        dec      cl
@@ -766,19 +749,19 @@ check_size_of_line: ;цикл подсчета пробелов от конца строки
        cmp      cl,CHAR_ON_LINE
        jae      set_x_80
  
-       mov      [x],cl ;курсор вправо на пробел в конце текста
- 
+       mov      [x],cl ;cursor right to space on end text into line
        jmp      NoRedraw
  
 set_x_80:
-       mov      byte [x],79
- 
+       mov      byte [x],80-1
        jmp      NoRedraw
-;----------------------------------------
+ 
+ 
 home:
        mov      byte [x],0
        jmp      NoRedraw
-;---------------------------------------------------------------------------
+ 
+ 
 backspace:
        cmp      [x],0
        jnz      .l1
@@ -790,17 +773,17 @@ backspace:
        jmp      NextKey
 .l1:
        dec      [x]
-;---------------------------------------------------------------------------
+ 
  
 key_del:
-;удаление символа или пустой строки
+;delete char or empty line
  
-;+ случай с одной строкой (start) . . . . . . . . . . . . . . . . . . . . . . .
-       mov      eax, dword [SizeTextFormatted] ;проверяем размер
-       cmp      eax, dword CHAR_ON_LINE ;если не одна строка - выход дальше
+;if one line ------\
+       mov      eax, dword [SizeTextFormatted] ;check size of text
+       cmp      eax, dword CHAR_ON_LINE ;if lines more then 1 - out
        ja       .next
  
-       mov      ebx,[StartMemory] ;вычисляем место
+       mov      ebx,[StartMemory] ;calc adr
  
        cmp      byte [FlagKeyShift],1
        jz       .delLine
@@ -809,19 +792,19 @@ key_del:
        xor      eax,eax
        mov      al,[x]
        add      ebx,eax
-       mov      cx, word CHAR_ON_LINE ;инит счетчик (размер строки)
+       mov      cx, word CHAR_ON_LINE
 .del:
-       mov      al, byte [ebx+1] ;сдвиг символов в строке
+       mov      al, byte [ebx+1] ;shift chars in line
        mov      [ebx], byte al
        inc      ebx
        dec      cx
        jnz      .del
        jmp      NextKey
  
-;случай с нажатой клавишей Shift - delete line
+;if pressed Shift - delete line
 .delLine:
 ;ebx = [StartMemory]
-       mov      eax, dword 20202020h ;4 пробела
+       mov      eax, dword 20202020h ;4 spaces
        mov      cx, word CHAR_ON_LINE/4
 .erase:
        mov      [ebx], dword eax
@@ -830,7 +813,8 @@ key_del:
        jnz      .erase
        jmp      NextKey
 .next:
-;- случай с одной строкой (end) . . . . . . . . . . . . . . . . . . . . . . . .
+;if one line ------/
+ 
  
        mov      ebx,[IndexPageActive]
        add      ebx,[StartMemory]
@@ -858,7 +842,7 @@ del_line:
        mov      esi,ebx
        add      esi,CHAR_ON_LINE
  
-;проверяем не находится строка в конце текста
+;check if line in end of text
        sub      ebx,[StartMemory]
        add      ebx,CHAR_ON_LINE
        cmp      ebx,[SizeTextFormatted]
@@ -907,17 +891,17 @@ not_empty_line:
        mov      edi,buf
        mov      esi,ebx
  
-moved_line_for_del:
+.moved_line_for_del:
        cmp      cl,CHAR_ON_LINE
-       jz       moved_line_for_del_back
+       jz       .moved_line_for_del_back
        mov      al,[esi]
        mov      [edi],al
        inc      esi
        inc      edi
        inc      cl
-       jmp      moved_line_for_del
+       jmp      .moved_line_for_del
  
-moved_line_for_del_back:
+.moved_line_for_del_back:
        mov      al,32
        mov      [edi],al
        mov      esi,buf
@@ -925,7 +909,7 @@ moved_line_for_del_back:
        mov      edi,ebx
        mov      cl,[x]
  
-moved_line_for_del_back_start:
+.moved_line_for_del_back_start:
        cmp      cl,CHAR_ON_LINE
        jz       .out
        mov      al,[esi]
@@ -933,15 +917,16 @@ moved_line_for_del_back_start:
        inc      esi
        inc      edi
        inc      cl
-       jmp      moved_line_for_del_back_start
+       jmp      .moved_line_for_del_back_start
 .out:
        jmp      NextKey
  
-;---------------------------------------------------------------------------
-;обрабатываем нажатие enter
+ 
+;enter key here
 enter_line:
        call     EnterLine
        jmp      NextKey
+ 
  
 page_down:
        mov      eax,dword [IndexPageActive]
@@ -970,14 +955,13 @@ page_down:
        jmp      NextKey
 .l1:
 ;-
- 
        sub      ebx,2000
        cmp      eax,ebx
-       jae      page_down_end_of_text
+       jae      .page_down_end_of_text
        mov      [IndexPageActive],eax
        jmp      NextKey
  
-page_down_end_of_text:
+.page_down_end_of_text:
        mov      [IndexPageActive],ebx
        mov      [x],0
        mov      [y],24
@@ -988,24 +972,24 @@ page_down_end_of_text:
 page_up:
        mov      eax,[IndexPageActive]
        cmp      eax,2000
-       ja       do_page_up
+       ja       .do_page_up
        xor      eax,eax
        mov      [x],al
        mov      [y],al
        mov      [IndexPageActive],eax
        jmp      NextKey
  
-do_page_up:
+.do_page_up:
        sub      eax,2000
        mov      [IndexPageActive],eax
        jmp      NextKey
  
-;конец цикла редактора
+ 
 ;end main program cycle
  
  
 SaveTextAndExit:
-;проверяем размер текста и размер памяти - если мало - ошибка и выход
+;check size text and size free memory
        mov      eax,dword [SizeTextFormatted]
        shl      eax,1
        cmp      eax, dword [SizeMemoryAviable]
@@ -1016,12 +1000,10 @@ SaveTextAndExit:
  
 .MemOk:
  
-;22:44 30.09.08<-------------------------------------
+;---save cursor pos---\
        xor      eax,eax
        mov      es,ax
- 
        mov      eax,[SizeTextFormatted]
- 
 mov dword [es:0+04f0h],eax
        mov      al,[x]
 mov byte [es:0+04f0h+4],al
@@ -1029,7 +1011,7 @@ mov byte [es:0+04f0h+4],al
 mov byte [es:0+04f0h+5],al
        mov      eax,[IndexPageActive]
 mov dword [es:0+04f0h+6],eax
-;22:44 30.09.08>-------------------------------------
+;---save cursor pos---/
  
  
        call     UnForm ;inc\unform.asm
@@ -1045,47 +1027,33 @@ mov dword [es:0+04f0h+6],eax
 ; mov dx, word [PtrNameFileText]
  
        call     WriteOperation
-;mov eax,11
        mov      dword [CodError],eax
  
- 
 close:
- 
        call     SaveTBFile ;TBFile - temp buf filea
  
- 
 quit:
- 
-;восстанавливаем экран,как было
        call     SetTxtVMode ;vesa16.asm
-; restore_video 0,0,CHAR_ON_LINE,LINES_ON_SCR,bufferScreen
-; cursor 0,24
-;------------------cursor------------------
-; mov ah,02h ; bios servis
-; mov bh,0
-; mov dh,24
-; mov dl,0
-; int 10h
-;------------------------------------------
- 
  
        push     cs
        pop      ds
        jmp      ExitToOs ;inc\flatrm.asm
-       align    16
  
+       align    16
  
        include  'inc\flatrm.asm'
  
 ExitDosInt21h:
-;завeршeниe программы
-       mov      ah,4ch ;ah=4ch (функция завершения программы)
+;!exit_____________________________________________________________________exit!
+       mov      ah,4ch
        int      21h
  
  
 ;--------------------------------------------
+ 
+ 
 GetLnAdr:
-;вычисляем адрес текущей строки в памяти
+;calc adr active line (cursor y)
        xor      eax,eax
        mov      al,[y]
        imulEax80
@@ -1097,7 +1065,7 @@ GetLnAdr:
  
  
 GetChAdr:
-;вычисляем адрес текущего символа в памяти
+;calc adr active char (cursor x)
        push     bx
        shr      ebx,16
        push     bx
@@ -1137,7 +1105,6 @@ PrintDosAH9:
 ;----------------
  
 ;++++++
-;ожидаем нажатия
 ; biosKBDwait ;inc\macro.asm
 BiosKBDWait:
 WaitPressAnyKey:
@@ -1145,6 +1112,7 @@ WaitPressAnyKey:
        int      16h
        ret
 ;++++++
+ 
        align    16
  
        include  'inc\strings\fnd.asm'
@@ -1184,8 +1152,8 @@ WaitPressAnyKey:
  
        include  'inc\erase.asm'
        include  'inc\select.asm' ;
-       include  'inc\keys\enter.asm' ;Shift+Enter обработчик
-       include  'inc\keys\backsp.asm' ;Backspace для начала строки
+       include  'inc\keys\enter.asm' ;Shift+Enter
+       include  'inc\keys\backsp.asm' ;Backspace
        include  'inc\keys\f5.asm'
  
  
@@ -1194,7 +1162,7 @@ WaitPressAnyKey:
        include  'inc\scancmd.asm'
        include  'inc\light.asm'; LighitText
  
-;шаблон include 'inc\dialog\cho\smenu.asm'
+;template include 'inc\dialog\cho\smenu.asm'
        include  'inc\dialog\cho\help.asm'
        include  'inc\dialog\cho\f7menu.asm'
        include  'inc\dialog\cho\menu.asm'
@@ -1205,7 +1173,6 @@ WaitPressAnyKey:
        include  'inc\auto\auto.asm'
  
        include  'inc\compress\lzw.asm'
- 
  
 ;;;include 'inc\pro.asm'
        align    16
@@ -1220,15 +1187,16 @@ save_SizeTextSelect dd 0
 c8 db 0
 ;-----
  
-ptrCopyPasteBuffer dd 0 ;адрес буфера для вставки текста
+ptrCopyPasteBuffer dd 0 ;main ptr to paste and copy text (F5 key)
  
 BaseProgram dd ?
-StartMemory dd 1000000h ;адрес начала блока памяти используемого в програме
+StartMemory dd 1000000h
 EndMemory dd 0
  
 ;-hide-cursor--3\
 F_waitHideCursor dd 0
 waitHideCursor dd 0
+waitHideCursorValue dd HIDE_CURSOR_TIME
 ;-hide-cursor--3/
  
  
@@ -1245,7 +1213,7 @@ waitHideCursor dd 0
 ;FlagModeColor db 0
  
  
-;TableVAX - таблица для перекодирования RADIX-50 >> ASCII
+;TableVAX - RADIX-50 >> ASCII
 SetRadActive dd TableVAX
  
 ;-----------------------------------------------------------------------------
@@ -1277,8 +1245,8 @@ Replay:
 .f_OldKey db 0
 .count db 0
  
-FlagKeyShift db 0 ;используется для del , select. !!!!!!#1 -не менять порядок
-;переменные для вставки текста
+FlagKeyShift db 0 ;for del , select. !!!!!!#1 -no change order
+;vars for enter text
 FlagTextSelect db 0 ;!!!!!!#2
 SizeTextSelect dd 0
  
@@ -1288,10 +1256,10 @@ CodError dd 0
  
 VideoBufMemory dd 0
  
-CountPressKbdTotal dd 0 ;всего нажатий
-CountPressKbdChar dd 0 ;char нажатий
+CountPressKbdTotal dd 0 ;all keys pressed
+CountPressKbdChar dd 0 ;chars keys pressed
  
-;PtrBufferText dd 0 ;адрес буфера для вставки текста
+;PtrBufferText dd 0
 SizeMemoryAviable dd 0
 SizeFile dd 0
 SizeTextFormatted dd 0
