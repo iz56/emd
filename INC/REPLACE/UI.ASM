@@ -57,6 +57,7 @@ db 0
  
 ReplaceWord: ;inc/replace.asm
  
+ 
        macro    pushXY {
        push     ax
  
@@ -109,6 +110,7 @@ printToScr 'enter word1: '
        printToScr ' something wrong '
        call     WaitPressAnyKey
        popXY
+ 
        ret      ;- - - - - - - - - - - - - - exit[1]
  
 .Word2:
@@ -191,6 +193,7 @@ printToScr 'replaces:'
        printToScr ' Press any key.. '
        call     WaitPressAnyKey
        popXY
+ 
        ret      ;- - - - - - - - - - - - - - exit[2]
  
 .x db 0
@@ -263,6 +266,9 @@ ChangeColorUIword:
  
  
 EnterWord:
+       xor      eax,eax
+       mov      dword [.ForwardNum],eax
+ 
        call     GetPos
        mov      [.posToStartCursor],eax
  
@@ -354,6 +360,9 @@ EnterWord:
        }
  
        call     .GetKey
+ 
+       mov      ecx,dword MAX_SIZE_FOR_ENTERED_WORD-5
+ 
 ;-----cursor keys-------
        cmp      ah,4Bh
        je       .decx
@@ -371,7 +380,6 @@ EnterWord:
        cmp      ah,83 ;del
        je       .del
  
- 
        cmp      ah,1;esc
        je       .close
  
@@ -384,21 +392,21 @@ EnterWord:
        mov      bx,ax
        mov      eax, dword [.ForwardNum]
        cmp      eax,dword MAX_SIZE_FOR_ENTERED_WORD-5
-       jz      .NextKey
-       jb      .ForwardOk
+       jz       .NextKey
+       jb       .ForwardOk
        mov      eax,dword MAX_SIZE_FOR_ENTERED_WORD-5
-       mov       dword [.ForwardNum],eax
+       mov      dword [.ForwardNum],eax
        jmp      .NextKey
  
  
-     .ForwardOk:
+.ForwardOk:
  
        mov      ax,bx
  
        cmp      al,32
        jb       .NextKey
  
-mov byte [.EskFlagForFirstPress],0
+       mov      byte [.EskFlagForFirstPress],0
  
        CharEnterToUserString
  
@@ -416,7 +424,7 @@ mov byte [.EskFlagForFirstPress],0
  
 .decx:
        cmp      dword [.ForwardNum],0
-jz .delERTERFD0
+       jz       .delERTERFD0
        dec      dword [.ForwardNum]
 .delERTERFD0:
  
@@ -478,6 +486,7 @@ jz .delERTERFD0
        xor      eax,eax
        call     FillMem
  
+ 
        mov      esi,dword .EnteredString
        mov      ecx,dword MAX_SIZE_FOR_ENTERED_WORD ;size buffer
        call     .ReplaceFirstLast
@@ -499,7 +508,7 @@ jz .delERTERFD0
        jmp      .NextKey
  
 .PutNewStringCall:
-mov byte [.EskFlagForFirstPress],0
+       mov      byte [.EskFlagForFirstPress],0
        mov      eax,dword [.posToStartCursor]
        call     SetPos
  
@@ -550,7 +559,7 @@ mov byte [.EskFlagForFirstPress],0
 .del:
  
        cmp      dword [.ForwardNum],0
-jz .delERTERFD
+       jz       .delERTERFD
        dec      dword [.ForwardNum]
 .delERTERFD:
  
@@ -650,27 +659,25 @@ jz .delERTERFD
        jmp      .decx ;bcs key exit
 .EskFlagForFirstPress db 0
 .close:
-cmp byte [.EskFlagForFirstPress],0
-jnz .errorEnterWord
+       cmp      byte [.EskFlagForFirstPress],0
+       jnz      .errorEnterWord
        mov      eax,dword [.posToStartCursor]
        call     SetPos
        call     SetcursorBios
-        CLS_endOfLine
+       CLS_endOfLine
        mov      esi,dword [VideoBufMemory]
        call     DrawPage
  
        mov      bx,word .EnteredString
-mov byte [bx],0
+       mov      byte [bx],0
        mov      word [.i],0
        mov      word [.iTop],0
  
-inc byte [.EskFlagForFirstPress]
+       inc      byte [.EskFlagForFirstPress]
        xor      eax,eax
        mov      dword [.ForwardNum],eax
  
-jmp .NextKey
- 
- 
+       jmp      .NextKey
  
 .errorEnterWord:
        stc
@@ -785,7 +792,7 @@ jmp .NextKey
 .i dw 0
 .iTop dw 0
 .EnteredString rb MAX_SIZE_FOR_ENTERED_WORD
-db 0
+       rd       10
  
  
 ;-----------
@@ -981,6 +988,9 @@ shiftPage:
  
 ;edi = ptr,ecx=size eax=value
 FillMem:
+       test     ecx,ecx
+       jnz      .l1
+       ret
 .l1:
        mov      dword [edi],eax
        add      edi,4
@@ -1006,7 +1016,6 @@ SavePos:
        }
  
  
- 
 ; eax = value
 ; edx = cursor to start user string
 PrintNumOfFindes:
@@ -1028,7 +1037,6 @@ PrintNumOfFindes:
        mov      eax,ecx
        call     Bin2AsciiDec ;esi=str
        CrrctEsiFrFrstZrPrnt
-; call PrintToEmdStr
  
 .exit:
        call     RestorePos
@@ -1049,5 +1057,6 @@ FillVideoPage:
        dec      ecx
        jnz      .l1
        ret
+ 
  
 ;EOF
