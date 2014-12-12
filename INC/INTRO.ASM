@@ -3,20 +3,20 @@
  
 IntroDos:
  
-;Проверяем номер версии dos
-       mov      ah,30h ;ah=30h (функция о┐ределения версии dos)
-       int      21h ;al = старший номер версии dos
- 
-;ah = младший номер версии dos
-       cmp      al,7 ;7я версия dos?
+;check ver MS-DOS , need v7.10
+       mov      ah,30h
+       int      21h
+;al = major
+;ah = minor
+       cmp      al,7 ;is 7 dos?
        jz      .dos_ok
  
        mov      si, .MsgErr1
        call     OutTextRadix50RealMode
-       int      20h ;завершение ┐рограммы (выход для старых версий)
+       int      20h ;terminate
  
 .dos_ok:
-       mov      al,[80h];если нет параметров -
+       mov      al,[80h] ;cmd line args?
        cmp      al,1
        ja       .l1
  
@@ -24,19 +24,19 @@ IntroDos:
        jmp      .ExitError
  
 .l1:
-       call     .CheckNameFile ;разбор командной строки
+       call     .CheckNameFile ;parse
        jnc      .l2
        mov      si, .MsgErrParameters
        jmp      .ExitError
 .l2:
  
-;┐роверяем наличие видеоада┐тера vga
-       xor      al,al ;al=0 (включeниe экрана)
-       mov      ah,12h ;ah=12h (функция прeрывания int 10h)
-       mov      bl,36h ;bl = подфункция гашeния/включeния экрана
+; vga?
+       xor      al,al ;al=0 (screen on)
+       mov      ah,12h
+       mov      bl,36h ;bl = on/off screen
        int      10h
  
-       cmp      al,12h ;это vga?
+       cmp      al,12h ;is it vga?
        je       .vga_ok
  
        mov      si, .MsgErr2
@@ -44,7 +44,7 @@ IntroDos:
  
 .vga_ok:
        mov      ah,0fh
-       int      10h ;Получить текущий видеорежим
+       int      10h ;get video mode
  
 ;       cmp      al,02h
 ;       je       .VidOK
@@ -52,8 +52,8 @@ IntroDos:
 ;       cmp      al,07h
 ;       je       .VidOK
  
-       cmp      al,03h
-       je       .VidOK ;Если текстовой режим
+       cmp      al,03h ;need 3
+       je       .VidOK
  
 ; mov ax,0003h ;set 80x25x16 char mode
 ; int 10h
@@ -62,44 +62,32 @@ IntroDos:
        jmp      .ExitError
  
 .VidOK:
-; проверить, находимся ли мы уже в защищенном режиме
-       mov      eax,cr0 ; прочитать регистр CR0
-       test     al,1 ; проверить бит РЕ,
-       jz       .no_V86 ; если он ноль - мы можем продолжать,
+; CPU mode
+       mov      eax,cr0
+       test     al,1
+       jz       .no_V86
  
-; иначе - сообщить об ошибке и выйти
        mov      si, .MsgErr3
        jmp      .ExitError
  
 .no_V86:
-; может быть, это Windows 95 делает вид, что РЕ = О?
+; Windows 95 > РЕ = О?
        mov      ax,1600h
        int      2Fh
        test     al,al
        jz       .no_windows
  
-; сообщить и выйти
        mov      si, .MsgErr4
        jmp      .ExitError
  
-; итак, мы точно находимся в реальном режиме
 .no_windows:
- 
-;       mov      al,[80h];если нет параметров -
-;       cmp      al,1
-;       ja       .all_ok
- 
-;       mov      si, .MsgErrParameters
-;       jmp      .ExitError
- 
 .all_ok:
-       ret
+       ret ;------------------------------exit[x]
  
 .ExitError:
        call     OutTextRadix50RealMode
  
-       mov      al,0ffh ;al=0ffh (kод возврата)
-;завeршeниe программы
+       mov      al,0ffh ;al=0ffh (ret cod)
        jmp      ExitDosInt21h ;emd.asm
  
 .MsgErr1:
@@ -148,10 +136,9 @@ db 064h ,058h ,0f9h ,000h ,0c8h ,04bh ,0b5h ,057h ,052h ,01fh ,0fdh ,021h
 db 015h ,03bh ,016h ,052h ,013h ,080h
  
  
-;проверяем имя файла и обрабатываем параметры (если есть)
 .CheckNameFile:
  
-; символы допустимые в имени файла ! @ # $ % ^ & ( ) ' ~ - _
+; true chars:  ! @ # $ % ^ & ( ) ' ~ - _
  
        mov      si,81h+1
        mov      cx,80
@@ -170,23 +157,22 @@ db 015h ,03bh ,016h ,052h ,013h ,080h
        cmp      al ,'/'
        jz       .endLineParam
  
-;недопустимый символ в имени файла (обрабатывать как ошибку)
+; not true
        cmp      al ,'?'
        jz       .errorNameFile
  
-;недопустимый символ в имени файла (обрабатывать как ошибку)
+; not true
        cmp      al ,'*'
        jz       .errorNameFile
  
-;конец строки
+;end line
        cmp      al ,13
        jz       .endLine
  
        cmp      al ,10
        jz       .endLine
  
-;проверим на всякий случай
-       cmp      al ,0
+       cmp      al ,0 ;it can delete
        jz       .endLine
        dec      cx
        jnz      .scancmd
@@ -197,39 +183,18 @@ db 015h ,03bh ,016h ,052h ,013h ,080h
  
 .endLineParam:
        mov      byte al,[si]
-       cmp      al,'f' ;параметр означает - без стартового экрана
+       cmp      al,'f' ;off start msg
        jnz      .endLine
  
-;делаем сброс стартового экрана
-;посредством прямой модификации кода
-;забиваем вызов кодами инструкции nop
        mov      bx,drawInfoBox
-       mov      eax,090909090h
+       mov      eax,090909090h ;4xnop
        mov     dword [bx],eax
 .endLine:
        dec      si
        mov      [si], byte 13
  
- 
-;       call     .GetTime ;задаём параметры - зависимые от времени
- 
        clc
        ret
- 
-;.GetTime:
-;       nop
-;mov ah,02h ;функция 02h прерывания 1Ah:
-;       int      1Ah ;чтение времени из RTC
-;       jc       .GetTime ;если часы заняты
-;AL = число часов в BCD формате
-;       cmp      al,0x07
-;       ja       .ab07
-;.ab07:
-;       cmp      al,0x19
-;       jb       .ok3
-;       mov      [VideoMode],dword 8;определяет какой режим при старте программы
-;.ok3:
-;       ret
  
  
 ;EOF

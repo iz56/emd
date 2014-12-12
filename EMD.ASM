@@ -1,8 +1,10 @@
 ;emd.asm
-;v1.71 (size 21941 bytes) [09/12/2014]
+;emd text editor main scr-file
  
 ;x86 cpu real & unreal mode cod
-;/for fasm (flat assembler version 1.20)/
+;OS: MS-DOSv7.10
+;compile: fasm emd.asm emd.com
+;flat assembler version 1.20 need
  
 ;macroses
        include  'inc\const.asm'
@@ -289,6 +291,10 @@ wait_kbd:
 .noClock:
 ;</clock>
 .hltSet:
+pusha
+call EraseMemory
+popa
+ 
 hlt ;save CPU power :)
 ; nop
        inc      dword [CountWait]
@@ -1035,6 +1041,7 @@ close:
 quit:
        call     SetTxtVMode ;vesa16.asm
  
+ 
        push     cs
        pop      ds
        jmp      ExitToOs ;inc\flatrm.asm
@@ -1114,6 +1121,8 @@ WaitPressAnyKey:
 ;++++++
  
        align    16
+ 
+;       include  'inc\loging.asm'
  
        include  'inc\strings\fnd.asm'
  
@@ -1200,7 +1209,7 @@ waitHideCursorValue dd HIDE_CURSOR_TIME
 ;-hide-cursor--3/
  
  
-;FlagKeyShift db 0 ;используется для del , select.
+;FlagKeyShift db 0 ; del , select.
  
 ;/replace to light.asm
 ; align 4

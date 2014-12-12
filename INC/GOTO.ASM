@@ -1,8 +1,19 @@
 ;goto.asm
  
-;set cursor to ...
- 
+;при нажатии f3 анализируем строку на которой курсор
+;и если это переход на метку - то ищем строку с этой меткой и туда
+GotoSaveStartPlace dd 0
 GotoLabel:
+;
+mov eax,[GotoSaveStartPlace]
+test eax,eax
+jz .work
+ 
+.work:
+       call     GetLnAdr ;emd.asm
+mov [GotoSaveStartPlace],eax
+ ;
+ 
        call     Animation
        mov      eax,dword [SizeTextFormatted]
        cmp      eax,dword CHAR_ON_LINE*25
@@ -17,27 +28,27 @@ mov al,':'
        call     GetLnAdr ;emd.asm
        mov      [.LnAdr],eax
  
-.ifFirstSearchNoResult:
+.ЕслиПервыйПоискНеудачен:
        mov      esi,[.LnAdr]
-       mov      ecx, dword CHAR_ON_LINE
+       mov      ecx, dword CHAR_ON_LINE ;ecx=длина строки
 .NextWrd:
        call     GetLabelName
        jc       .Exit
  
-;save ecx esi
+;сохраним регистры ecx esi
        mov      [.tmp],dword ecx
        mov      [.tmp+4],dword esi
        call     CheckInTable
-;restore ecx esi
+;restore регистры ecx esi
        mov      ecx,dword [.tmp]
        mov      esi,dword [.tmp+4]
  
        jc       .NextWrd
  
-;correct for finded word size
+;перемотка найденого слова
 ;----->
        push     bx
-       mov      bx,4 ;4 - max size of word (call)
+       mov      bx,4 ;длина самой длинной call
 .l11:
        dec      bx
        jc       .Exit
@@ -54,7 +65,7 @@ mov al,':'
        jc       .Exit
  
        dec      esi
-;esi = ptr word for search, ecx = size limit
+;теперь esi адресует слово для поиска ecx = длина не более этого
        call     FindWordLabel
 .Exit:
  
@@ -70,7 +81,7 @@ mov al,':'
  
        mov      al,' '
        mov      [PostLabelChar],al
-       jmp      .ifFirstSearchNoResult
+       jmp      .ЕслиПервыйПоискНеудачен
  
 .tmp dd 0,0
 .LnAdr dd 0
@@ -84,7 +95,7 @@ FindWordLabel:
        mov      [.WordAdr],dword esi
  
        inc      esi
-;get size
+;подсчет длины
 ;----->
        xor      edx,edx
 .l1:
@@ -106,18 +117,20 @@ FindWordLabel:
        add      eax,dword [SizeTextFormatted]
        mov      [.EndTextAdr],dword eax
  
+ 
+;вычисляем адрес текущей строки в памяти
        call     GetLnAdr ;emd.asm
 ;eax =ptr
        mov      [.MainLineAdr], dword eax
  
-;init indexs vars
-       mov      eax, dword CHAR_ON_LINE
+;готовим индексные переменные
+       mov      eax, dword CHAR_ON_LINE ;ecx=длина строки
  
        mov      [.iUp],dword eax
        mov      [.iDn],dword eax
  
-;search cycle from active line (here cursor)
-.nextSearch:
+;цикл поиска от текущей строки
+.следИтерация:
  
        call     .nextUp
        mov      eax,dword 1
@@ -134,7 +147,7 @@ FindWordLabel:
        call     .CheckStr
        jc       .End2
  
-       jmp      .nextSearch
+       jmp      .следИтерация
  
 .End:
        cmp      eax,dword 1
