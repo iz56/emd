@@ -3,7 +3,7 @@
  
 ;x86 cpu real & unreal mode cod
 ;OS: MS-DOSv7.10
-;compile: fasm emd.asm emd.com
+;compile: fasm emd.asm emd.asd.com
 ;flat assembler version 1.20 need
  
 ;macroses
@@ -1209,7 +1209,7 @@ waitHideCursorValue dd HIDE_CURSOR_TIME
 ;-hide-cursor--3/
  
  
-;FlagKeyShift db 0 ; del , select.
+;FlagKeyShift db 0 ;используется для del , select.
  
 ;/replace to light.asm
 ; align 4
