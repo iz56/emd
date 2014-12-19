@@ -2,9 +2,9 @@
  
  
        macro    err_ret { stc
-       ret   }
+       ret      }
        macro    ok_ret { clc
-       ret  }
+       ret      }
  
 ;-------\
 GoToData: ;search for dd,db,dw,label:
@@ -12,7 +12,8 @@ GoToData: ;search for dd,db,dw,label:
        jnc      .work
        call     If2stWord
        jnc      .work
-       ret ;-----------------exit[1]
+       clc
+       ret      ;-----------------exit[1]
 .work:
        mov      dword [.totalFnds],0
  
@@ -36,7 +37,8 @@ GoToData: ;search for dd,db,dw,label:
        call     TestForData ;ebx=ptr
        jc       .nextFnd
        call     SetPage
-       ret ;-----------------exit[2]
+       stc
+       ret      ;-----------------exit[2]
  
 .endFnd:
        mov      esi,dword .mgEndFnd
@@ -46,7 +48,7 @@ GoToData: ;search for dd,db,dw,label:
        mov      esi,dword .mgNo
        call     .DisplayUserInfo
        clc
-       ret ;-----------------exit[3]
+       ret      ;-----------------exit[3]
  
 .mgOk db 'find',0
 .mgNo db 'no find',0
@@ -72,7 +74,7 @@ GoToData: ;search for dd,db,dw,label:
        mov      ecx,dword [.saveRegsQ+8]
        mov      ebx,dword [.saveRegsQ+12]
  
-       ret ;-----------------exit[.printRes]
+       ret      ;-----------------exit[.printRes]
  
 .saveRegsQ dd 0,0,0,0
 ;----/
@@ -85,11 +87,11 @@ GoToData: ;search for dd,db,dw,label:
        xor      ecx,ecx
        mov      cl,2 ;delay
 .l2:
-;       hlt
+; hlt
        dec      cx
        jnz      .l2
        popa
-       ret ;-----------------exit
+       ret      ;-----------------exit
 ;---------------/
  
 ;--------\
@@ -186,7 +188,7 @@ IfSkobki:
        call     GetLnAdr ;emd.asm
  
        mov      ebx,eax
-       mov      cx, word CHAR_ON_LINE
+       mov      cx, word CHAR_ON_LINE-8
  
        mov      dl,'['
        call     ParseLn
@@ -255,7 +257,7 @@ ParseLn:
 MoveStrToBuf: ;ebx=ptr to str ,eax=fun
        test     eax,eax
        jz       .work
-       ret ;-----------------exit[1]
+       ret      ;-----------------exit[1]
 .work:
        call     .PushAll
        mov      edi,dword buf
@@ -273,7 +275,7 @@ MoveStrToBuf: ;ebx=ptr to str ,eax=fun
        jnz      .l1
 .endWord:
        call     .PopAll
-       ret ;-----------------exit[2]
+       ret      ;-----------------exit[2]
  
 .PushAll:
        mov      dword [.saveRegs],eax
@@ -282,7 +284,7 @@ MoveStrToBuf: ;ebx=ptr to str ,eax=fun
        mov      dword [.saveRegs+12],edi
        mov      dword [.saveRegs+16],esi
        mov      dword [.saveRegs+20],ecx
-       ret ;-----------------exit
+       ret      ;-----------------exit
  
 .PopAll:
        mov      eax,dword [.saveRegs]
@@ -291,7 +293,7 @@ MoveStrToBuf: ;ebx=ptr to str ,eax=fun
        mov      edi,dword [.saveRegs+12]
        mov      esi,dword [.saveRegs+16]
        mov      ecx,dword [.saveRegs+20]
-       ret ;-----------------exit
+       ret      ;-----------------exit
  
 .saveRegs dd 0,0,0,0,0,0,0
 ;-----------/
@@ -310,12 +312,12 @@ TestAlToEndOfWord:
  
        mov      esi,[.saveEsi]
        clc
-       ret ;-----------------exit[1]
+       ret      ;-----------------exit[1]
  
 .ItEndCh:
        mov      esi,[.saveEsi]
        stc
-       ret ;-----------------exit[2]
+       ret      ;-----------------exit[2]
 .saveEsi dd 0
 .tableOfChs db ' :;,.[]{}()*/!@#$%&=+-?|',0
 ;----------------/
@@ -449,7 +451,7 @@ EbxCut80:
        jmp      .l1
 .zEbx:
        mov      ebx,eax
-       ret ;-----------------exit
+       ret      ;-----------------exit
 ;-------/
  
  
