@@ -2,28 +2,35 @@
  
 ;при нажатии f3 анализируем строку на которой курсор
 ;и если это переход на метку - то ищем строку с этой меткой и туда
-GotoSaveStartPlace dd 0
 GotoLabel:
-;
-mov eax,[GotoSaveStartPlace]
-test eax,eax
-jz .work
- 
-.work:
-       call     GetLnAdr ;emd.asm
-mov [GotoSaveStartPlace],eax
- ;
+       mov      al,[x]
+       mov      [.xsave],al
  
        call     Animation
+ 
        mov      eax,dword [SizeTextFormatted]
        cmp      eax,dword CHAR_ON_LINE*25
        ja       .ok
-       ret
+       ret ;--------exit[1]
 .ok:
        call     GoToMacro ;search for macro
-call GoToData ;search for dd,db,dw,label:
+       jc       .Complete
+       clc
+       call     GoToData ;search for dd,db,dw,label:
+       jc       .Complete
+       clc
+       call     GoToLabelDo
+.Complete:
  
-mov al,':'
+       mov      al,[.xsave]
+       mov      [x],al
+       ret ;--------exit[2]
+.xsave db 0
+ 
+ 
+GoToLabelDo:
+ 
+       mov      al,':'
        mov      [PostLabelChar],al
        call     GetLnAdr ;emd.asm
        mov      [.LnAdr],eax
@@ -72,11 +79,11 @@ mov al,':'
        mov      al,byte [PostLabelChar]
        test     al,al
        jnz      .Ище
-       ret
+       ret ;--------exit[1]
 .Ище:
        cmp      al,' '
        jnz      .l111
-       ret
+       ret ;--------exit[2]
 .l111:
  
        mov      al,' '
@@ -171,7 +178,7 @@ FindWordLabel:
        jmp      .добиваемUp
  
 .End2:
-       ret
+       ret ;--------exit[1]
  
  
  
@@ -217,11 +224,11 @@ mov al,[PostLabelChar];':'
        call     SetPage
        mov      byte [PostLabelChar],0
        stc
-       ret
+       ret ;--------exit[2]
  
 .нетСовпадения:
        clc
-       ret
+       ret ;--------exit[3]
  
  
 ;-------
@@ -236,11 +243,11 @@ mov al,[PostLabelChar];':'
        mov      eax,dword [.iUp]
        add      eax,dword CHAR_ON_LINE
        mov      [.iUp],dword eax
-       ret
+       ret ;--------exit[x]
  
 .endUp:
        xor      edi,edi
-       ret
+       ret ;--------exit[x]
 ;-------
  
  
@@ -255,11 +262,11 @@ mov al,[PostLabelChar];':'
        mov      eax,dword [.iDn]
        add      eax,dword CHAR_ON_LINE
        mov      [.iDn],dword eax
-       ret
+       ret ;--------exit[x]
  
 .endDn:
        xor      edi,edi
-       ret
+       ret ;--------exit[x]
 ;-------
  
 .MaxSize dd 0
@@ -330,13 +337,13 @@ CheckInTable:
 .ok:
  
        clc
-       ret
+       ret ;--------exit[1]
  
  
 .notC:
 .notOk:
        stc      ;нет совпадения
-       ret
+       ret ;--------exit[2]
 ;-------------
  
  
@@ -345,7 +352,7 @@ GetLabelName:
        test     ecx,ecx
        jnz      .l1
        stc
-       ret
+       ret ;--------exit[1]
  
 .l1:
        mov      al, byte [esi]
@@ -357,12 +364,12 @@ GetLabelName:
        dec      ecx
        jnz      .l1
        stc
-       ret
+       ret ;--------exit[2]
  
 .find:
        dec      ecx
        clc
-       ret
+       ret ;--------exit[3]
 ;------------
  
 ;==============================[go to macro]===================================
@@ -371,10 +378,10 @@ GetLabelName:
  
 GoToMacro:
  
-       call     GetFirstWordFromLn ;ret esi=ptr to first word
+       call     GetFirstWordFromLn ;ret ;--------exit[x] esi=ptr to first word
        jnc      .ok
        clc
-       ret
+       ret ;--------exit[1]
 .ok:
        call     GetLnAdr ;emd.asm
        mov      [.macroReliseLine],eax
@@ -390,16 +397,18 @@ GoToMacro:
        inc      ebx
        cmp      ebx, [.macroReliseLine]
        jnz      .notDownLimit
-       ret      ;-------exit[0]
+       clc
+       ret ;--------exit[2]
  
 .notDownLimit:
        dec      ecx
        jnz      .l1
-       ret      ;-------exit[1]
+       clc
+       ret ;--------exit[3]
 .fndM:
        cmp      ecx,dword CHAR_ON_LINE
        jae      .okSizeText
-       ret      ;-------exit[2]
+       ret ;--------exit[4]
 .okSizeText:
        mov      eax,dword [ebx+2]
        cmp      eax,'cro '
@@ -427,7 +436,8 @@ GoToMacro:
        inc      ebx
        dec      ecx
        jnz      .l2
-       ret      ;-------exit[3]
+       clc
+       ret ;--------exit[5]
  
 .firstChOfName:
        cmp      al,byte [edi]
@@ -436,8 +446,10 @@ GoToMacro:
        call     CompareStrings ;edi=ptr to 1str !
        jc       .l1
 ;it work end
+       clc
        call     SetPage ;setpg.asm
-       ret      ;----------exit[4]
+       stc
+       ret ;--------exit[6]
 .macroReliseLine dd 0 ;here save limit ptr for search macro declaration
  
  
@@ -460,11 +472,11 @@ CompareStrings:
 .False:
        call     .PopAll
        stc
-       ret
+       ret ;--------exit[1]
 .ok:
        call     .PopAll
        clc
-       ret
+       ret ;--------exit[2]
  
  
 .PushAll:
@@ -474,7 +486,7 @@ CompareStrings:
        mov      dword [.saveRegs+12],edi
        mov      dword [.saveRegs+16],esi
        mov      dword [.saveRegs+20],ecx
-       ret
+       ret ;--------exit
  
 .PopAll:
        mov      eax,dword [.saveRegs]
@@ -484,7 +496,7 @@ CompareStrings:
        mov      esi,dword [.saveRegs+16]
        mov      ecx,dword [.saveRegs+20]
  
-       ret
+       ret ;--------exit
  
 .saveRegs dd 0,0,0,0,0,0,0
  
@@ -510,11 +522,11 @@ GetFirstWordFromLn:
        jb       .l1
        mov      dword [.i],0
        stc
-       ret
+       ret ;--------exit[1]
 .itWord:
        mov      esi,ebx
        clc
-       ret
+       ret ;--------exit[2]
  
 .i dd 0
 .iEnd dd 0
@@ -535,7 +547,7 @@ GetLn4Ch: ;ret eax=start 1chr ptr on this line
        add      edx,dword [StartMemory]
        mov      eax,edx
        call     .PopAll ;eax-not pop
-       ret      ;-------exit
+       ret ;--------exit
  
 .PushAll:
        mov      dword [.saveRegs],ecx
@@ -543,7 +555,7 @@ GetLn4Ch: ;ret eax=start 1chr ptr on this line
        mov      dword [.saveRegs+8],edx
        mov      dword [.saveRegs+12],edi
        mov      dword [.saveRegs+16],esi
-       ret
+       ret ;--------exit
  
 .PopAll:
        mov      ebx,dword [.saveRegs+4]
@@ -551,7 +563,7 @@ GetLn4Ch: ;ret eax=start 1chr ptr on this line
        mov      edi,dword [.saveRegs+12]
        mov      esi,dword [.saveRegs+16]
        mov      ecx,dword [.saveRegs]
-       ret
+       ret ;--------exit
  
 .saveRegs dd 0,0,0,0,0,0
  
@@ -559,7 +571,7 @@ GetLn4Ch: ;ret eax=start 1chr ptr on this line
 Animation:
        cmp      [VideoMode],3
        jz       .work
-       ret
+       ret ;--------exit
 .work:
 ; call cls
        call     Clock ;inc\clock.asm
@@ -586,7 +598,7 @@ Animation:
        hlt
        dec      cx
        jnz      .l2
-       ret
+       ret ;--------exit
  
 .textA db 0f0h,0
 .timeHlt db 5
