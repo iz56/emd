@@ -2,51 +2,43 @@
  
  
 EraseMemory:
+       inc      word [.workQ] ;work times/2
  
-       .SIZE_ERASED_MEMORY = 40*25 ;2 page
+       mov      ax,word [.workQ]
+       shl      ax,15
+       test     ax,ax
+       jnz      .work
+       ret ;---------exit[1]
  
-       pusha
+.work:
+       .SIZE_ERASED_MEMORY = 20*25 ;2 page
  
        mov      edi,dword [StartMemory]
        add      edi,dword [SizeTextFormatted]
  
-       mov      eax,dword [.index]
-       test      eax,eax
-       jz       .firstTime ;only 1 time work
- 
-       sub      eax,dword .SIZE_ERASED_MEMORY/2 ;20*25
-       cmp      edi,eax
-       jb       .ok
- 
-.firstTime:
-       mov      ecx,dword .SIZE_ERASED_MEMORY
        mov      eax,dword [EndMemory]
-       sub      eax,dword .SIZE_ERASED_MEMORY*5
+       sub      eax,dword .SIZE_ERASED_MEMORY*8
  
        cmp      edi,eax
-       jae      .memoryProblemEnd
+       jb       .memoryOk
+       ret ;---------exit[2]
+ 
+.memoryOk:
+       mov      eax,dword 0x020202020 ;32x4
+       mov      ecx,dword .SIZE_ERASED_MEMORY
  
 .erase_mem:
- 
-       mov      [edi],dword 0x020202020;32x4
+       mov      [edi],dword eax
+       add      edi,4
+       mov      [edi],dword eax
        add      edi,4
  
        dec      ecx
        jnz      .erase_mem
  
-.ok1:
+       ret ;---------exit[3]
  
-       mov      [.index], edi
- 
-.ok:
-       popa
-       ret
- 
-.memoryProblemEnd:
- 
-            xor edi,edi
-jmp     .ok1
+.workQ dw 0
  
  
-.index dd 0 ;save old top of erased memory for optimisation
 ;EOF

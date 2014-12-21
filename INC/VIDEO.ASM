@@ -35,15 +35,13 @@
        local    redrawfilter2
        local    exit
  
-;проверяем FlagTextSelect
        cmp      byte [FlagTextSelect],0
        jz       FastRedraw
  
 ;;;;;;;;;call StartProf
-;старый вариант 693128
+;old variant 693128
        mov      esi,[StartMemory]
        add      esi,[IndexPageActive]
-;       mov      ecx,4000
        mov      ecx,[SizeVideoPageBytes] ;4000
  
        mov      edi,dword [VideoBufMemory]
@@ -59,10 +57,9 @@ redraw1:
        jmp      exit
  
 FastRedraw:
-;новый вариант 427720
+;new variant 427720
        mov      esi,[StartMemory]
        add      esi,[IndexPageActive]
-; xor ebx,ebx
        mov      ebx,dword [VideoBufMemory]
        mov      ecx,2000/4
  
@@ -80,8 +77,6 @@ redraw2:
        add      eax,edx
        add      eax,0x07000700
        mov      ebp,eax
-;mov dword [gs:ebx],eax
-; add ebx,dword 4
        mov      eax,edi
        shr      eax,16
        mov      edx,eax
@@ -91,13 +86,9 @@ redraw2:
        shl      eax,16
        add      eax,edx
        add      eax,0x07000700
-;mov byte [gs:0+di],al
        mov      dword [ebx],ebp
-; add ebx,dword 4
        mov      dword [ebx+4],eax
        add      ebx,dword 8
-;mov byte [gs:ebx],al
-; add ebx,dword 2
        dec      ecx
        jnz      redraw2
 ;;;;;;;;;;;;;;;;;call EndProf

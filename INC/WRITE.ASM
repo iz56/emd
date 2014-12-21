@@ -1,7 +1,6 @@
 ;write.asm
  
  
- 
        OK_COMPLETE = 0 ;if not errors
  
 ;error cods for exit to dos msg print
@@ -61,7 +60,7 @@ display 'write :'
  
 .WriteCycle:
  
-display PROGRESS_SPEC_CHAR
+       display  PROGRESS_SPEC_CHAR
  
        mov      esi, dword [.IndexWriteOperation]
        mov      edi, buf
@@ -92,10 +91,7 @@ display PROGRESS_SPEC_CHAR
        add      [.IndexWriteOperation], dword SIZE_READ_BUF
        sub      [.BytesToWrite], dword SIZE_READ_BUF
  
-;mov esi,msg.next ;следующий блок
-;call Print
- 
-       in       al, 60h ;выход если esc
+       in       al, 60h ; esc?
        cmp      al, 81h
        jnz      .WriteCycle
  
@@ -148,14 +144,11 @@ display PROGRESS_SPEC_CHAR
        mov      eax, dword [.CodError]
        ret
  
- 
        align    4
  
 .CodError dd 0
- 
-;данные для записи файла
-.BytesToWrite dd ? ;размер незаписанного массива данных
-.IndexWriteOperation dd ? ;адресс в массиве
+.BytesToWrite dd 0
+.IndexWriteOperation dd 0
 .PtrNameFileText dw 0
 .h dw 0
  
