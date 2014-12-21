@@ -6,7 +6,7 @@ SetPage:
        .NUM_OF_LINE = 11 ;for set cursor in screen
  
        sub      ebx,dword [StartMemory]
-call EbxCut80
+       call     EbxCut80
  
        mov      eax,[SizeTextFormatted]
        sub      eax,ebx
@@ -28,9 +28,7 @@ call EbxCut80
        ret      ;-------exit[1]
  
 .itNotEndOfText:
- 
        call     .divEbx
- 
  
        mov      [IndexPageActive],dword 0
  

@@ -40,7 +40,7 @@
        mov      [EndMemory],dword eax
  
        cld
-       call     FlatrmInit  ;set CPU to unreal mode
+       call     FlatrmInit ;set CPU to unreal mode
  
  
 ;flat real mode CPU cod start here :)
@@ -81,7 +81,7 @@
  
        call     ReadOperation ;read.asm
  
-;eax = error cod,  zero if not error
+;eax = error cod, zero if not error
        mov      [CodError],dword eax ;save err cod
        test     eax,eax
        jnz      quit ;-----exit[x]
@@ -126,7 +126,7 @@ intro_0:
        mov      fs,ax
 ;fs = 0, gs = 0x0b800
  
-;if file name end  ".asm,0"
+;if file name end ".asm,0"
        mov      si,[PtrNameFileText]
 .l1:
        mov      al,[si]
@@ -174,7 +174,7 @@ not_set_x_y:
        jnz      NextKey
  
        mov      ebx,[StartMemory]
-       mov      eax,0x020202020  ;4 spaces
+       mov      eax,0x020202020 ;4 spaces
        mov      cx,CHAR_ON_LINE/4
 .l1:
        mov      [ebx],dword eax
@@ -186,6 +186,8 @@ not_set_x_y:
  
 ; START - main program loop here
 NextKey:
+       call     EraseMemory
+ 
  
 ;call StartProf
        redraw
@@ -241,7 +243,7 @@ NoRedraw_0:
  
 ;-hide-cursor--1\
        mov      dword [F_waitHideCursor],1
-       mov     eax, dword [waitHideCursorValue]
+       mov      eax, dword [waitHideCursorValue]
  
        mov      dword [waitHideCursor],eax ;HIDE_CURSOR_TIME
 ;-hide-cursor--1/
@@ -291,9 +293,6 @@ wait_kbd:
 .noClock:
 ;</clock>
 .hltSet:
-pusha
-call EraseMemory
-popa
  
 hlt ;save CPU power :)
 ; nop
@@ -1122,7 +1121,7 @@ WaitPressAnyKey:
  
        align    16
  
-;       include  'inc\loging.asm'
+; include 'inc\loging.asm'
  
        include  'inc\strings\fnd.asm'
  
@@ -1190,7 +1189,7 @@ WaitPressAnyKey:
 ;-----tbuf.asm
 iTbuf dd 0
 NameTbufFile db 'c:\tmp\emd.tmp',0
-rb 66 ;81-15 (80 - max size of path to file on dos system)
+       rb       66 ;81-15 (80 - max size of path to file on dos system)
 h_t_f dw 0
 save_SizeTextSelect dd 0
 c8 db 0
@@ -1209,7 +1208,7 @@ waitHideCursorValue dd HIDE_CURSOR_TIME
 ;-hide-cursor--3/
  
  
-;FlagKeyShift db 0 ;используется для del , select.
+;FlagKeyShift db 0 ; del , select.
  
 ;/replace to light.asm
 ; align 4
@@ -1246,9 +1245,7 @@ FontPack:
        include  'inc\drbytes.asm'
  
        align    16
-;       include  'inc\gotod.asm'
  
-;here zero data reserv
 Replay:
 .OldKey dw 0
 .f_OldKey db 0
@@ -1282,13 +1279,13 @@ errors db 0 ;for debug
  
        align    4
 Font:
-       rb       SIZE_REAL_OF_FONT
+rb SIZE_REAL_OF_FONT
        align    16
 buf:
 ;buf2:
-rb SIZE_READ_BUF
-rb 1000h
-       rb       65535-$-2
+       rb       SIZE_READ_BUF
+       rb       1000h
+rb 65535-$-2
        if       $ > 10000h
 display 'warning: 64k limit exceeded.'
        end      if

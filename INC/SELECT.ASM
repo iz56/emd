@@ -1,28 +1,26 @@
 ;select.asm
  
  
-;вход: ah содержит сканкод нажатой клавиши
-;dl = [FlagKeyShift] ,dh = [FlagTextSelect]
+;ah= scan code of pressed key
+;dl = [FlagKeyShift]
+;dh = [FlagTextSelect]
  
 SelectBlockText:
  
- 
-;проверяем нажатие клавиш и флагов
-       cmp      dl,0;[FlagKeyShift];,byte 0
+       cmp      dl,0
        jz       .NotKeyShiftPress
  
-;нажатa shift - проверяем флаг выделения блока строк
-       cmp      dh,0;[FlagTextSelect];,byte 0
+;shift pressed - check flag select
+       cmp      dh,0
        jz       .FlagTextSelectZero
  
-;проверяем сканкод - если не 50h заканчиваем выделение
-       cmp      ah,50h ;теперь регистр ax is free
+;check scan code - if not 50h ended selecting
+       cmp      ah,50h ;now ax is free
        jnz      .EndSelect
  
  
-;----------------------
-;проверяем конец текста
-;если текущая строка в конце текста - заканчиваем выделение принудительно
+;check end text
+;if activ line in end of text - close selecting forsed
        mov      ebx,[IndexPageActive]
        xor      eax,eax
        mov      al,[y]
@@ -34,34 +32,31 @@ SelectBlockText:
        add      ebx,eax
        cmp      ebx,[SizeTextFormatted]
        jae      .EndSelect
-;----------------------
  
  
-       add      dword [SizeTextSelect],CHAR_ON_LINE ;увеличиваем счетчик
-; выд. текста
+       add      dword [SizeTextSelect],CHAR_ON_LINE ;inc size of selected text
  
-;здесь проверяем размер выделенного текста
+;here check size of selected text
        cmp      dword [SizeTextSelect],SIZE_TXT_BUF
-       ja       .EndSelect;заканчиваем выделение
+       ja       .EndSelect ;end selecting
  
-;здесь подсвечиваем выделяемый текст
+;lighting
        xor      eax,eax
        mov      al,[y]
-;проверяем движение экрана
+;check if moved screen
        cmp      al,24
        jnz      .OnPage
  
-;подсвечиваем строку на экране сверху
+;light upper line on page
        mov      esi,0
-; mov ebx,dword [VideoBufMemory]
  
 .scan23:
        mov      ebx,dword [VideoBufMemory]
        add      ebx,esi
        mov      al, byte [ebx+1]
-       add      esi,160;2
+       add      esi,160 ;2
        cmp      esi,4000
-       jz       .OnPage;никогда
+       jz       .OnPage ;never
        cmp      al,23
        jnz      .scan23
        cmp      esi,160
@@ -89,8 +84,6 @@ SelectBlockText:
        xor      edi,edi
        mov      di,bx
        mov      ebx,dword [VideoBufMemory]
-;shl edi,16
-;shr edi,16
        add      ebx,edi
        mov      [ebx+1], byte 23
        add      edi,dword 2
@@ -118,37 +111,29 @@ SelectBlockText:
        mov      byte [FlagTextSelect],1
        mov      dword [SizeTextSelect],CHAR_ON_LINE
  
-;помещаем выделенный текст сюда
        mov      edi,[ptrCopyPasteBuffer]
  
-;05.02.2012
- 
-;копируем текст заранее ,полностью заполняя буфер
+;copy selected text preverse max size buf
        mov      ecx, dword SIZE_TXT_BUF ;!
- 
        call     movsbVersion32
  
- 
-;здесь подсвечиваем выделяемый текст (- line)
+;lighting selected text (- one line)
        xor      eax,eax
        mov      al,[y]
-       jmp      .OnPage ;см. выше
- 
+       jmp      .OnPage
  
 .NotKeyShiftPress:
- 
-;проверяем FlagTextSelect
        cmp      byte [FlagTextSelect],0
        jnz      .EndSelect
        ret
  
-;заканчиваем выделение текста
 .EndSelect:
        beep
        xor      eax,eax
        mov      [FlagTextSelect], byte al
-       redraw   ;заполнение
+       redraw
        colored
        ret
+ 
  
 ;EOF
