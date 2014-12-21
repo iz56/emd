@@ -1,8 +1,12 @@
-emd
+EMD
 ===
 
-What is EMD? It is a 16/32-bit simply text editor for MS-DOS , written in Assembly. 
+What is EMD? It built from scratch. It is a 16/32-bit simply text editor for MS-DOS , written in Assembly. 
 I am use it for write fasm programs. Video mode 3, unreal mode CPU, x86. Hard assembler. Same self-modifying code. Int 21h, BIOS, ports. 
+
+
+License
+=======
 
 Public domain for all.
 
@@ -12,7 +16,7 @@ How to run
 
 * Get a DOS compatible floppy disk image (e.g. from here: http://www.allbootdisks.com/download/dos.html)
 * Install some VM (qemu)
-* Push emd.como floppy disk image`
+* Push emd.com to floppy disk image`
 * Start qemu with this image`
 * Run emd: `emd file.txt`
  
