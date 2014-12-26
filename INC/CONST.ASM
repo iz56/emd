@@ -1,7 +1,9 @@
 ;const.asm
  
  
-PROGRESS_SPEC_CHAR = 0b0h
+       SIZE_REAL_OF_FONT=2048
+ 
+       PROGRESS_SPEC_CHAR = 0b0h
  
        CHAR_ON_LINE = 80 ;chars on line
  
@@ -15,6 +17,8 @@ PROGRESS_SPEC_CHAR = 0b0h
        MEMORY_MIN = SIZE_VIDEO_BUF+SIZE_TXT_BUF+10000h
  
        LINES_ON_SCR = 25 ;lines on video page
+       LAST_LINE_OF_PAGE = LINES_ON_SCR - 1
+ 
        SEG_VIDEO_MEMORY = 0b800h
  
  
@@ -29,7 +33,7 @@ PROGRESS_SPEC_CHAR = 0b0h
        COLOR_ASCII_TXT_OFFSET = 2
        COLOR_ASCII_TXT_OFFSET2 = 9
  
-;       COLOR_B  = 8;цвет всех рамок для сообщений в программе
+; COLOR_B = 8;цвет всех рамок для сообщений в программе
  
  
 ;цвет меток перехода
@@ -41,7 +45,8 @@ PROGRESS_SPEC_CHAR = 0b0h
  
  
 ;for fast video drawing
-SPACES_7_DWORD = 0x07200720
+       SPACES_7_DWORD = 0x07200720
  
  
 ;EOF
+ 

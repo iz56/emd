@@ -1,6 +1,6 @@
 ;backsp.asm
  
-;return eax=111 если ничего не делать - иначе на NextKey
+;return eax=111 if do not samething -if eax<>111 , then jmp NextKey
 BackspaceLine:
        call     GetLnAdr
  
@@ -17,7 +17,7 @@ BackspaceLine:
        dec      ecx
        jnz      .lw1
  
-;выход - строка пуста
+;exit - line is empty
        dec      byte [y]
        call     .DelLine
        ret
@@ -25,16 +25,16 @@ BackspaceLine:
 .lw2:
        mov      [.shift_x],cl
  
-       inc      edi ; позиция конечного символа верхней строки
+       inc      edi ;pos of ended ch upper line
  
        cmp      edi,esi
        jnz      .okok
  
-       mov      eax,111 ;ы
+       mov      eax,111 ;do nothing
        ret
  
 .okok:
-       mov      edx,ecx ;edx = остаток предыдущей строки
+       mov      edx,ecx ;edx = last body of line
        mov      ecx,dword CHAR_ON_LINE
  
 .l1:
@@ -45,7 +45,7 @@ BackspaceLine:
        dec      ecx
        jnz      .l1
  
-;выход - строка пуста
+;exit - line is empty
        call     .DelLine
        ret
  
@@ -60,7 +60,7 @@ BackspaceLine:
  
        call     .DelLine
        call     .ShiftCheck
-       ret      ;выход из BackspaceLine ---------------------------------------]
+       ret      ;exit from BackspaceLine --------------------------------------X
  
 .DelLine:
        call     GetLnAdr
@@ -69,7 +69,7 @@ BackspaceLine:
        add      eax,dword CHAR_ON_LINE
        mov      esi,eax
  
-       mov      ebx,[IndexPageActive] ;текущая страница
+       mov      ebx,[IndexPageActive] ;
        xor      eax,eax
        mov      al,[y]
  
@@ -87,20 +87,20 @@ BackspaceLine:
        ret
  
 .ShiftCheck:
-; нажата клавиша shift ?
+; shift ?
        cmp      byte [FlagKeyShift],1
        jz       .Shift_ok
        ret
  
 .Shift_ok:
-;узнаем правый или левый shift
-;флаг состаяния клавиатуры (BIOS data area)
+;right or left shift?
+;flag KBD status (BIOS data area)
 mov al,byte [fs:0+00417h]
        shl      al,7
        cmp      al,0
        jz       .leftShiftPressed
  
-;здесь обрабатываем правый shift+backspace
+;here right_shift+backspace
        xor      eax,eax
        ret
  
@@ -110,5 +110,6 @@ mov al,byte [fs:0+00417h]
        dec      [y]
        ret
 .shift_x db 0
+ 
  
 ;EOF

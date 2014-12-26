@@ -10,44 +10,18 @@ DeleteEmptyLines: ;inc/delline.asm
        jc       .stop
  
        call     .CheckEmptyLine
-       add      esi,dword 80
+       add      esi,dword [leghtY]
        mov      eax,dword [SizeTextFormatted]
        add      eax,dword [StartMemory]
        cmp      esi,eax ;test address-----------!
        jnz      .l1
  
 .stop:
-       mov      eax,dword [SizeTextFormatted]
-       cmp      eax,CHAR_ON_LINE*25
-       jb       .cursorUp
- 
-       sub      eax,CHAR_ON_LINE*25
- 
-       mov      dword [IndexPageActive],eax
-                                           ret
-       cmp      eax,dword [IndexPageActive]
-       jb       .endTextSetPos
- 
-;       ret
- 
-.endTextSetPos:
-       mov      eax,dword [SizeTextFormatted]
-       sub      eax,CHAR_ON_LINE*25
-       mov      dword [IndexPageActive],ebx
-       mov      [y],byte 24
-;       mov      [x],al
- 
-       ret
- 
-.cursorUp:
- 
        xor      eax,eax
        mov      dword [IndexPageActive],eax
        mov      [y],al
        mov      [x],al
- 
        ret
- 
  
  
 .escCheck:
@@ -76,7 +50,7 @@ DeleteEmptyLines: ;inc/delline.asm
 .CheckEmptyLine:
        mov      [.saveEsi],esi
  
-       mov      cl,20;80
+       mov      cl,20;[leghtY]
 .a1:
        mov      eax,dword [esi]
        cmp      eax,0x020202020;' '
@@ -89,7 +63,7 @@ DeleteEmptyLines: ;inc/delline.asm
        call     .Erase
  
        mov      esi,[.saveEsi]
-       sub      esi,80
+       sub      esi,[leghtY]
        ret
  
 .exit:
@@ -111,7 +85,7 @@ DeleteEmptyLines: ;inc/delline.asm
  
        mov      esi,[.saveEsi]
        mov      edi,esi
-       add      dword esi,80
+       add      dword esi,[leghtY]
  
 .l11:
        mov      eax,dword [esi]
@@ -122,16 +96,12 @@ DeleteEmptyLines: ;inc/delline.asm
        jnz      .l11
  
        mov      eax,[SizeTextFormatted]
-       sub      eax,80
+       sub      eax,[leghtY]
        mov      [SizeTextFormatted],eax
        ret
- 
- 
-;-------------------------------------------------------------------------------
  
 .saveEsi dd 0 ;here actual address of line into memory
 .countOfDelLines dd 0
  
+ 
 ;EOF
- 
- 

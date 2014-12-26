@@ -1,7 +1,7 @@
 ;radix50.asm
  
  
-;вывод на зкран строки в кодировке radix50
+;print to screen radix50 string
 ; ds:si = ptr Rad string
 OutTextRadix50RealMode:
  
@@ -16,11 +16,10 @@ OutTextRadix50RealMode:
        mov      dx,si
  
        call     .checkDollar
- 
-       mov      ah,9
-       int      21h
+       call     PrintDosAH9 ;emd.asm
  
        ret
+ 
  
 .checkDollar:
        mov      cx,70
@@ -35,7 +34,8 @@ OutTextRadix50RealMode:
        mov      al, '$'
        mov      [si],byte al
 .ok:
- 
+;       mov      al, 0
+;       mov      [si+1],byte al
        ret
  
 ;входные даные:

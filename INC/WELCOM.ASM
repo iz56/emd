@@ -4,10 +4,12 @@
 Welcom:
        cls      7
  
+.LINE = 12
+ 
 ;------------------cursor------------------
        mov      ah,02h ;- bios servis
        mov      bh,0
-       mov      dh,12
+       mov      dh,.LINE
        mov      dl,0
        int      10h
 ;------------------------------------------

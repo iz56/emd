@@ -8,8 +8,8 @@ IntroDos:
        int      21h
 ;al = major
 ;ah = minor
-       cmp      al,7 ;is 7 dos?
-       jz      .dos_ok
+       cmp      al,3 ;is 3 dos?
+       jae      .dos_ok
  
        mov      si, .MsgErr1
        call     OutTextRadix50RealMode
@@ -46,11 +46,12 @@ IntroDos:
        mov      ah,0fh
        int      10h ;get video mode
  
-;       cmp      al,02h
-;       je       .VidOK
+       cmp      al,02h
+       jz       .SetVid
  
-;       cmp      al,07h
-;       je       .VidOK
+       cmp      al,07h
+       jz       .SetVid
+ 
  
        cmp      al,03h ;need 3
        je       .VidOK
@@ -60,6 +61,10 @@ IntroDos:
  
        mov      si, .MsgErr5
        jmp      .ExitError
+ 
+.SetVid:
+       mov      ax,0003h ;set 80x25x16 char mode
+       int      10h
  
 .VidOK:
 ; CPU mode
@@ -82,7 +87,7 @@ IntroDos:
  
 .no_windows:
 .all_ok:
-       ret ;------------------------------exit[x]
+       ret      ;------------------------------exit[x]
  
 .ExitError:
        call     OutTextRadix50RealMode
@@ -138,7 +143,7 @@ db 015h ,03bh ,016h ,052h ,013h ,080h
  
 .CheckNameFile:
  
-; true chars:  ! @ # $ % ^ & ( ) ' ~ - _
+; true chars: ! @ # $ % ^ & ( ) ' ~ - _
  
        mov      si,81h+1
        mov      cx,80
@@ -148,32 +153,27 @@ db 015h ,03bh ,016h ,052h ,013h ,080h
        mov      byte al,[si]
        inc      si
  
+;end line
+       cmp      al ,13
+       jz       .exit
+       cmp      al ,10
+       jz       .exit
+ 
        cmp      al ,' '
        jz       .endLine
  
-       cmp      al ,'-'
-       jz       .endLineParam
- 
        cmp      al ,'/'
-       jz       .endLineParam
+       jz       .endLine
  
-; not true
        cmp      al ,'?'
        jz       .errorNameFile
  
-; not true
        cmp      al ,'*'
        jz       .errorNameFile
  
-;end line
-       cmp      al ,13
-       jz       .endLine
+       cmp      al ,0
+       jz       .errorNameFile
  
-       cmp      al ,10
-       jz       .endLine
- 
-       cmp      al ,0 ;it can delete
-       jz       .endLine
        dec      cx
        jnz      .scancmd
  
@@ -181,20 +181,45 @@ db 015h ,03bh ,016h ,052h ,013h ,080h
        stc
        ret
  
-.endLineParam:
-       mov      byte al,[si]
-       cmp      al,'f' ;off start msg
-       jnz      .endLine
  
-       mov      bx,drawInfoBox
-       mov      eax,090909090h ;4xnop
-       mov     dword [bx],eax
 .endLine:
-       dec      si
-       mov      [si], byte 13
+       mov      [si-1], byte 13
  
+       mov      byte al,[si]
+       cmp      al ,'-'
+       jz       .endLineParam
+       cmp      al ,'/'
+       jz       .endLineParam
+       cmp      al ,'\'
+       jz       .endLineParam
+ 
+       cmp      al,'f' ;off start msg
+       jz       paramF
+.endLineParam:
+       mov      byte al,[si+1]
+       cmp      al,'f' ;off start msg
+       jz       paramF
+; cmp al,'e'
+; jz paramE
        clc
        ret
+ 
+.exit:
+       clc
+       ret
+ 
+ 
+paramF:
+       mov      bx,drawInfoBox
+       mov      eax,090909090h ;4xnop
+       mov      dword [bx],eax
+       clc
+       ret
+ 
+;paramE:
+ 
+; clc
+; ret
  
  
 ;EOF
