@@ -1,15 +1,13 @@
 ;f5.asm
  
+ 
 EnterTextBuffer:
        cmp      dword [SizeTextSelect],0
        jnz      .work
-       call     LoadTBFile
+       call     LoadTBFile ;load from disk
  
 .work:
-       beep
- 
-;здесь проверяем в
-;пределах текста, или в конце, нужно вставить блок
+       beep ;send user sound
  
        xor      eax,eax
        mov      al,[y]
@@ -23,8 +21,8 @@ EnterTextBuffer:
        add      eax,dword [StartMemory]
        mov      edi,eax
  
-       mov      eax,dword [SizeTextSelect];увеличиваем размер текста
-       add      [SizeTextFormatted],dword eax
+       mov      eax,dword [SizeTextSelect]
+       add      [SizeTextFormatted],dword eax ;update size
  
        mov      esi,[ptrCopyPasteBuffer]
        mov      ecx,[SizeTextSelect]
@@ -44,8 +42,9 @@ EnterTextBuffer:
        mov      edi,esi
        add      edi,[SizeTextSelect]
        cmp      edi,[EndMemory]
-jb .shiftText
-    ;error - memory is end
+       jb       .shiftText
+ 
+;error - memory is end
        stc
        ret  ;----------------exit[2]
  
@@ -70,5 +69,6 @@ jb .shiftText
        mov      ecx,[SizeTextSelect]
        call     movsbVersion32
        ret  ;----------------exit[3]
+ 
  
 ;EOF

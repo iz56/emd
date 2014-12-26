@@ -3,7 +3,7 @@
  
        AUTO_COMPARE_TRUE = 0x01
        AUTO_POS_IN_WORD = 2 ;num of chars for action
-       AUTO_WORD_SIZE = 5 ;min word size for work it
+       AUTO_WORD_SIZE = 8 ;min word size for work it
        SIZE_OF_WORDS_BUF = 80
  
  

@@ -1,6 +1,70 @@
 ;macro.asm
  
  
+       macro    unpackFont {
+;cx=size
+;si=ptr of arh
+;di=ptr to unpack data free mem
+;bx=ptr to temp work buff
+       mov      si,word FontPack
+; mov cx,word font_size
+       mov      di,word Font
+       mov      bx,word buf
+       call     LZW_unpack
+       }
+ 
+ 
+       macro    SetColorUI color {
+       mov      byte [PrintToEmdStr.Color],color
+       }
+ 
+ 
+       macro    printToScr Str {
+       local    .ok, .msg
+       mov      esi,.msg
+       call     PrintToEmdStr
+       jmp      .ok
+.msg db Str
+db 0
+.ok:
+       }
+ 
+       macro    SetcursorToLine num {
+       mov      eax,dword CHAR_ON_LINE*num ;set cursor to line 2
+       call     SetPos
+       }
+ 
+       macro    SetcursorToNewLine {
+       local    .ok, .l1, .ok2
+       pusha
+       call     GetPos
+ 
+.l1:
+       test     eax,eax
+       jz       .ok
+       cmp      eax,dword CHAR_ON_LINE
+       jb       .ok
+       sub      eax,dword CHAR_ON_LINE
+       jmp      .l1
+ 
+.ok:
+       push     ax
+ 
+       call     GetPos
+       pop      bx
+       sub      ax,bx
+       add      ax,CHAR_ON_LINE
+       cmp      ax,word CHAR_ON_LINE*25
+       jnz      .ok2
+ 
+       call     shiftPage ;----
+       mov      eax,dword CHAR_ON_LINE*24
+.ok2:
+       call     SetPos
+       popa
+       }
+ 
+ 
        macro    biosKBDwait { call BiosKBDWait }
  
        macro    setcur argX,argY {

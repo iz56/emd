@@ -1,10 +1,12 @@
 ;emd.asm
-;emd text editor main scr-file
+;emd text editor - main suorce file
  
-;x86 cpu real & unreal mode cod
-;OS: MS-DOSv7.10
-;compile: fasm emd.asm emd.asd.com
-;flat assembler version 1.20 need
+;cpu: real & unreal x86
+;used: bios, dos, ports API
+;OS: MS-DOS (v7.10-tested ok)
+;compile: fasm emd.asm emd.com
+;flat assembler version 1.20+ need
+;license: Public Domain
  
 ;macroses
        include  'inc\const.asm'
@@ -18,19 +20,6 @@
        push     cs
        pop      ds
  
-       SIZE_REAL_OF_FONT=2048
-       macro    unpackFont {
-;cx=size
-;si=ptr of arh
-;di=ptr to unpack data free mem
-;bx=ptr to temp work buff
-       mov      si,word FontPack
-       mov      cx,word font_size
-       mov      di,word Font
-       mov      bx,word buf
-       call     LZW_unpack
-       }
- 
        call     IntroDos ;intro.asm checks
  
        call     DetectMemory ;inc/detectm.asm
@@ -41,6 +30,7 @@
  
        cld
        call     FlatrmInit ;set CPU to unreal mode
+       jc       quit ;----exit[x]
  
  
 ;flat real mode CPU cod start here :)
@@ -48,7 +38,7 @@
 ;get size of memory
        call     MemChk ;inc/memch.asm
  
-;scan command line for a file name
+;scan command line for a file name - return dx=ptr to ASCIIZ string
        call     ScanCmd ;inc/scancmd.asm
        jc       quit ;----exit[x]
  
@@ -64,7 +54,7 @@
  
 ;close file
        mov      ah,3eh
-       int      21h ;dos service
+       int      21h
  
 ;delete file
        mov      dx,word [PtrNameFileText]
@@ -79,16 +69,12 @@
        mov      dx, word [PtrNameFileText] ;dx=ptr to file name
        mov      edi, dword [StartMemory] ;read to memory start from [edi]
  
-       call     ReadOperation ;read.asm
+       call     ReadOperation ;read.asm ecx=size of readed data
  
-;eax = error cod, zero if not error
+;eax = error cod, = zero if not error
        mov      [CodError],dword eax ;save err cod
        test     eax,eax
        jnz      quit ;-----exit[x]
- 
-       cmp      eax,dword 0
-       jnz      quit ;-----exit[x]
- 
  
        mov      [SizeFile],dword ecx
  
@@ -96,10 +82,10 @@
        call     WaitPressAnyKey
  
 ;processing text
-;add spaces to lines to 80
+;add spaces to lines to 80 - create array of fixed size lines
        call     FormText ;inc\form.asm
  
-;print welcom screen
+;print welcom screen - display info
 drawInfoBox:
        call     Welcom ;inc\welcom.asm
        nop      ;need for "/f"
@@ -117,7 +103,7 @@ intro_0:
 ;erase memory into end text (for del trash from screen)
        call     EraseMemory ;inc\erase.asm
  
-       unpackFont
+       unpackFont ;font was packed LZW
  
 ;set fs gs
        mov      ax,SEG_VIDEO_MEMORY
@@ -1018,7 +1004,6 @@ mov byte [es:0+04f0h+5],al
 mov dword [es:0+04f0h+6],eax
 ;---save cursor pos---/
  
- 
        call     UnForm ;inc\unform.asm
  
        mov      ecx, dword [SizeTextFormatted]
@@ -1040,23 +1025,79 @@ close:
 quit:
        call     SetTxtVMode ;vesa16.asm
  
- 
        push     cs
        pop      ds
-       jmp      ExitToOs ;inc\flatrm.asm
- 
-       align    16
- 
-       include  'inc\flatrm.asm'
- 
-ExitDosInt21h:
-;!exit_____________________________________________________________________exit!
-       mov      ah,4ch
+ExitToOs:
+       mov      ax,250Dh
+mov dx,word [irq_5] ;irq_5 see: /inc/flatrm.asm
+       mov      ds,word [irq_5+2]
        int      21h
  
+       mov      eax, dword [CodError]
+       test     eax,eax ;if not error - exit
+       jz       .Exit
  
-;--------------------------------------------
+.l0:
+       cmp      eax, dword MAX_MSGS_ERRORS_NUM
+       ja       .Exit
+       shl      ax,1
+       mov      bx,TablePtrMsgErr ;msgerr.asm
+       add      bx,ax
+       mov      si,[bx-2]
+       call     OutTextRadix50RealMode ;print msg
  
+       mov      al,0ffh ;set err cod for dos
+       mov      [Exit2OsCod], byte al
+.Exit:
+       mov      al,[Exit2OsCod] ;(return cod for ah=4ch,int 21h)
+ 
+ExitDosInt21h:
+       mov      ah,4ch
+       int      21h ;-------------------main exit from program
+ 
+;(kод возврата для ah=4ch,int 21h)
+Exit2OsCod db 0
+ 
+;----------
+SaveXY:
+ 
+       mov      al,[y]
+       mov      [.y],al
+       mov      al,[x]
+       mov      [.x],al
+       ret
+.re:
+       mov      al,[.y]
+       mov      [y],al
+       mov      al,[.x]
+       mov      [x],al
+       ret
+.y db 0
+.x db 0
+ 
+ 
+ 
+ 
+ 
+;------
+SetCursor:
+       xor      ebx,ebx
+       mov      bl,[x]
+       xor      eax,eax
+       mov      al,[y]
+       imulEax80
+       add      ebx,eax
+       mov      al,0x0E
+       mov      ah,bh
+       mov      dx,03d4h
+       out      dx,ax
+       inc      ax
+       mov      ah,bl
+       out      dx,ax
+       ret
+ 
+ 
+;------
  
 GetLnAdr:
 ;calc adr active line (cursor y)
@@ -1092,7 +1133,6 @@ GetChAdr:
        ret
  
 ;--------------------------------------------
- 
 movsbVersion32:
 .l1:
        mov      al,[esi]
@@ -1123,6 +1163,10 @@ WaitPressAnyKey:
  
 ; include 'inc\loging.asm'
  
+       include  'inc\flatrm.asm'
+ 
+       include  'inc\redraw.asm'
+ 
        include  'inc\strings\fnd.asm'
  
        include  'inc\video\cls.asm'
@@ -1140,6 +1184,7 @@ WaitPressAnyKey:
        include  'inc\tbfile.asm' ;
  
        include  'inc\vesa16.asm'
+       include  'inc\video\all.asm'
        include  'inc\video\bitmap.asm'
        include  'inc\video\bitmap1.asm'
        include  'inc\video\page.asm'
@@ -1151,6 +1196,7 @@ WaitPressAnyKey:
        include  'inc\write.asm'
  
        include  'inc\radix50\rmode\radix50.asm' ;
+       include  'inc\radix50\unreal\radix50.asm' ;
  
        include  'inc\form.asm'
        include  'inc\goto.asm'
@@ -1182,9 +1228,32 @@ WaitPressAnyKey:
  
        include  'inc\compress\lzw.asm'
  
+       include  'inc\welcom.asm' ;start screen
+       include  'inc\intro.asm'
+       include  'inc\detectm.asm'
+       include  'inc\memch.asm'
+       include  'inc\cls16.asm'
+       include  'inc\drbytes.asm'
+ 
+FontPack:
+; file 'inc\font\cyrillic.f8'
+       file     'inc\font\cyrillic.pak'
+ 
+; font_size = $-FontPack
+;====
+ 
+ 
 ;;;include 'inc\pro.asm'
        align    16
- 
+;leght of one line on page (dword)
+leghtY dd 80
+IndexPageActive dd 0
+SizeTextFormatted dd 0
+VideoBufMemory dd 0
+StartMemory dd 1000000h
+EndMemory dd 0
+x db 0
+y db 0
  
 ;-----tbuf.asm
 iTbuf dd 0
@@ -1197,9 +1266,7 @@ c8 db 0
  
 ptrCopyPasteBuffer dd 0 ;main ptr to paste and copy text (F5 key)
  
-BaseProgram dd ?
-StartMemory dd 1000000h
-EndMemory dd 0
+;BaseProgram dd ?
  
 ;-hide-cursor--3\
 F_waitHideCursor dd 0
@@ -1224,28 +1291,7 @@ waitHideCursorValue dd HIDE_CURSOR_TIME
 ;TableVAX - RADIX-50 >> ASCII
 SetRadActive dd TableVAX
  
-;-----------------------------------------------------------------------------
-;====
-       align    16
- 
-FontPack:
-; file 'inc\font\cyrillic.f8'
-       file     'inc\font\cyrillic.pak'
- 
-       font_size = $-FontPack
-;====
-       align    16
- 
- 
-       include  'inc\welcom.asm' ;start screen
-       include  'inc\intro.asm'
-       include  'inc\detectm.asm'
-       include  'inc\memch.asm'
-       include  'inc\cls16.asm'
-       include  'inc\drbytes.asm'
- 
-       align    16
- 
+       align    4
 Replay:
 .OldKey dw 0
 .f_OldKey db 0
@@ -1257,10 +1303,10 @@ FlagTextSelect db 0 ;!!!!!!#2
 SizeTextSelect dd 0
  
 CountWait dd 0
-FlagNewFile db 0
 CodError dd 0
+FlagNewFile db 0
  
-VideoBufMemory dd 0
+       align    4
  
 CountPressKbdTotal dd 0 ;all keys pressed
 CountPressKbdChar dd 0 ;chars keys pressed
@@ -1268,23 +1314,21 @@ CountPressKbdChar dd 0 ;chars keys pressed
 ;PtrBufferText dd 0
 SizeMemoryAviable dd 0
 SizeFile dd 0
-SizeTextFormatted dd 0
  
-IndexPageActive dd 0
 PtrNameFileText dw 0
-x db 0
-y db 0
 CountCHAR_ON_LINE db 0
 errors db 0 ;for debug
  
-       align    4
+ 
+       align    32
 Font:
 rb SIZE_REAL_OF_FONT
-       align    16
+ 
+       align    32
 buf:
-;buf2:
        rb       SIZE_READ_BUF
        rb       1000h
+ 
 rb 65535-$-2
        if       $ > 10000h
 display 'warning: 64k limit exceeded.'

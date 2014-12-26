@@ -1,28 +1,24 @@
 ;enter.asm
  
  
-;обрабатываем нажатие enter
+;if pressed enter key
 EnterLine:
  
-;очищаем память после конца текста (нужно если весь текст меньше экрана)
-       call     EraseMemory ;inc\erase.asm
- 
-;проверяем наличие свободной
-;памяти с двухкратным запасом (возможность обработать текст для сохранения)
-       mov      eax,[SizeTextFormatted] ;текущий размер несжатого текста
-       shl      eax,1 ;(умножаем на 2)
+;check size of free mem (*2 needed)
+       mov      eax,[SizeTextFormatted] ;size of formated text (array80*lines)
+       shl      eax,1
        add      eax,dword CHAR_ON_LINE*2
        mov      ebx,eax
        add      ebx,dword [StartMemory]
  
        cmp      ebx,dword [EndMemory]
-       jae      .close ;мало памяти
+       jae      .close ;memory is end
  
-;сохраняем для случая shift+enter
+;save for shift+enter
        mov      al,[x]
        mov      [.tmpX],al
  
-;если конец текста
+;if end of text
        mov      ebx,[IndexPageActive]
        xor      eax,eax
        mov      al,[y]
@@ -31,18 +27,18 @@ EnterLine:
        add      ebx,eax
        cmp      [SizeTextFormatted],ebx
        jbe      .end_of_text
-;середина и начало
-       mov      ebx,[StartMemory] ;начало текста
-       add      ebx,[IndexPageActive] ;текущая страница
-       xor      eax,eax ;обнуляем eax
+;if start and middle
+       mov      ebx,[StartMemory]
+       add      ebx,[IndexPageActive]
+       xor      eax,eax
        inc      [y]
-       mov      al,[y] ;al - следующая строка
+       mov      al,[y] ;al - next line
        cmp      al,LINES_ON_SCR
        jz       .end_of_page
  
 .ok_page:
        imul     ax,CHAR_ON_LINE
-       add      ebx,eax ;ebx - место вставки пустой строки
+       add      ebx,eax ;ebx - here  past empty line
        mov      edi,[SizeTextFormatted]
        add      edi,[StartMemory]
        mov      esi,edi
@@ -59,10 +55,10 @@ EnterLine:
  
        add      dword [SizeTextFormatted],CHAR_ON_LINE
  
-       mov      byte [x],0;переводим курсор в начало
+       mov      byte [x],0 ;set cursor to start of line
        jmp      .pasteLineComplete
  
-;когда нужно перемотать экран вниз
+;if needed scroll down
 .end_of_page:
        mov      al,24
        mov      [y],al
@@ -74,51 +70,50 @@ EnterLine:
  
        add      dword [SizeTextFormatted],CHAR_ON_LINE
  
-       mov      byte [x],0 ;переводим курсор в начало строки
+       mov      byte [x],0 ;set cur start
        inc      [y]
        cmp      [y],LINES_ON_SCR
        jnz      .pasteLineComplete
        add      dword [IndexPageActive],CHAR_ON_LINE
        mov      [y],24
-; jmp .pasteLineComplete
  
  
 .pasteLineComplete:
-; нажата клавиша shift ?
+; shift ?
        cmp      byte [FlagKeyShift],1
        jz       .EnterShift_CutLine
  
-       ret      ; работа сделана для одиночного Enter
+       ret      ; work completed for single Enter
  
  
-;shift+enter - дорабатываем
+;shift+enter
 .EnterShift_CutLine:
  
-;узнаем правый или левый shift
-;флаг состаяния клавиатуры (BIOS data area)
+;shift
+;flag KBD status (BIOS data area)
 mov al,byte [fs:0+00417h]
        shl      al,7
        cmp      al,0
        jz       .leftShiftPressed
  
  
-;здесь обрабатываем правый shift+enter
+;right shift+enter
        xor      eax,eax
        mov      al,[.tmpX]
        cmp      al,0
        jnz      .go
        ret
 .go:
-       push     ax ;ax=место разреза строки
+       push     ax ;ax=here cut line
  
-       mov      ebx,[StartMemory] ;начало текста
-       add      ebx,[IndexPageActive] ;текущая страница
+       mov      ebx,[StartMemory]
+       add      ebx,[IndexPageActive]
  
        xor      eax,eax
        mov      al,[y]
  
        imul     ax,CHAR_ON_LINE
-       add      ebx,eax ;ebx - пустая строка
+       add      ebx,eax ;ebx - empty line
        mov      eax,ebx
  
  
@@ -142,7 +137,7 @@ mov al,byte [fs:0+00417h]
        mov      cx,dx
  
        mov      eax,dword [.tmp_edi]
-       sub      eax, dword CHAR_ON_LINE ;вычислим оставшиеся символы - колиество
+       sub      eax, dword CHAR_ON_LINE ;chars num needed
        mov      edi,eax
        mov      dx, word CHAR_ON_LINE
  
@@ -156,7 +151,7 @@ mov al,byte [fs:0+00417h]
        jnz      .move0
  
        mov      cx,dx
-       mov      al,32 ;дополним строку пробелами
+       mov      al,32 ;+spaces to line
 .move32:
        mov      [edi],al
        inc      edi
@@ -165,21 +160,21 @@ mov al,byte [fs:0+00417h]
  
        dec      [y]
  
-       ret      ; работа сделана для Enter+Shift(правый)
+       ret      ; work comleted for Enter+right_Shift
  
  
 .tmp_edi dd 0
  
 .leftShiftPressed:
  
-       mov      ebx,[StartMemory] ;начало текста
-       add      ebx,[IndexPageActive] ;текущая страница
+       mov      ebx,[StartMemory]
+       add      ebx,[IndexPageActive]
  
        xor      eax,eax
        mov      al,[y]
  
        imul     ax,CHAR_ON_LINE
-       add      ebx,eax ;ebx - пустая строка
+       add      ebx,eax ;ebx - empty line
        mov      eax,ebx
  
        mov      edi,eax
@@ -201,44 +196,32 @@ mov al,byte [fs:0+00417h]
        dec      ecx
        jnz      .copyLine
  
-       ret      ; работа сделана для Enter+Shift(левый)
+       ret      ; work completed for Enter+left_Shift
  
 .tmpX db 0
  
  
 .close:
-;если памяти мало
+;error memory end:
        sub      dword [SizeTextFormatted],CHAR_ON_LINE
  
+       call     SaveXY ;emd.asm
  
-;очистка экрана
-       mov      eax,07200720h
-       mov      edi,dword 4000
-.cls:
-mov dword [gs:0+di],eax
- 
-       sub      edi,dword 4
-       jnz      .cls
-mov dword [gs:0+di],eax
- 
-;------------------cursor------------------
-       mov      ah,02h ;- bios servis
-       mov      bh,0
-       mov      dh,24
-       mov      dl,0
-       int      10h
-;------------------------------------------
+       SetcursorToLine 0
+       SetColorUI 7
  
        mov      si,.msgErrorMemory
-       mov di,buf
-       call     OutTextRadix50RealMode
+       mov      di,buf
+       call     OutTextRadix50UnRealMode
  
- biosKBDwait ;inc\macro.asm
-       ret ;зывершение с выводом сообщения ошибки
+       biosKBDwait ;inc\macro.asm
+ 
+       call     SaveXY.re ;emd.asm
+       ret
+ 
  
 .msgErrorMemory:
 db 022h ,022h ,090h ,060h ,0ech ,059h ,00dh ,002h ,0aah ,053h ,078h ,0a0h
- 
  
  
 ;EOF
