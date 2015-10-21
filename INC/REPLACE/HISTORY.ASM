@@ -49,7 +49,10 @@ HistoryReplaces: ;main entry
        ret      ;----exit[3]
  
 .cleanStr db '-/-',0
+virtual at TmpData+56
 .rtestStr rb MAX_SIZE_FOR_ENTERED_WORD
+end virtual
+ 
 db 0
  
 .ptrToMemForBuf dd TempBuf
@@ -122,7 +125,10 @@ RepHistorySaveStr: ;history.asm
 ;------/
  
  
+virtual at TmpData+28
 .saveRegs dd 0,0,0,0,0,0,0,0
+end virtual
+ 
 .ptrToMemForBuf dd TempBuf
 .numstr dd 0
  
@@ -174,7 +180,10 @@ RepHistoryGetStr: ;history.asm
  
        ret
  
+virtual at TmpData
 .saveRegs dd 0,0,0,0,0,0,0
+end virtual
+ 
 .ptrToMemForBuf dd TempBuf
  
  

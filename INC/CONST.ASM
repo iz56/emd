@@ -1,5 +1,10 @@
 ;const.asm
  
+;\ see files: <scr.asm>,<emd.asm>
+ SET_ON = 0x045
+ SET_OFF = 0x05
+;/
+ 
  
        SIZE_REAL_OF_FONT=2048
  
@@ -49,4 +54,3 @@
  
  
 ;EOF
- 

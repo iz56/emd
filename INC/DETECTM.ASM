@@ -1,7 +1,7 @@
 ;detectm.asm
  
  
-       macro    hnewmem {
+       macro   _hnewmem {
  
 ; use the INT 0x15, eax= 0xE820 BIOS function to get a memory map
 ; inputs: es:di -> destination buffer for 24 byte entries

@@ -277,10 +277,13 @@ mov word [fs:0+041ah],bx
        pop      bx
        ret
  
+virtual at TmpData
  
 .colorBack db 0 ;color for text of menu
 .colorActiv db 0 ;color for active line of menu
 .pMenu dw 0
 .tipeMenu dd 0
+ 
+end virtual
  
 ;EOF

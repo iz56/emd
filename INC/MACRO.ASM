@@ -1,4 +1,27 @@
 ;macro.asm
+
+
+
+macro Print80h {
+;		Output line [SI] to screen, end of line marked with 80h
+;
+Output:
+		cld			; reset direction flag
+		lodsb			; load argument from string
+		push	AX		; save byte
+		and     AL,7fh		; insure valid character
+		mov     AH,14		; write tty
+		int     10h		; bios video service
+		pop	AX		; restore byte
+		test    AL,80h		; test for end of string
+		jz      Output		; do until end of string
+		ret			; return to caller
+newLine		db	13,10+80h
+
+}
+
+
+
  
  
        macro    unpackFont {

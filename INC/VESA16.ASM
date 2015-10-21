@@ -97,7 +97,7 @@ SetTxtVMode:
        int      10h
        ret
  
-VideoLinear dd ? ; address of video linear memory
+;VideoLinear dd ? ; address of video linear memory
 ;video_pitch dd ? ; bytes per line in video memory
 ;video_width dd ? ; width of video screen
 ;video_height dd ? ; height of video screen

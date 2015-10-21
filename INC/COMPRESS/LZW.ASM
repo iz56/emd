@@ -190,6 +190,8 @@ AddInTable :
        pop      si
        ret
  
+virtual at TmpData
+ 
 InputOffs rw 1
 Temp_Offs rw 1
 OutPutOffs2 rw 1
@@ -210,5 +212,6 @@ le82b rw 1
 le76byte rb 1
 le77byte rb 1
  
+end virtual
  
 ;EOF

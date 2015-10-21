@@ -7,6 +7,8 @@
 ;compile: fasm emd.asm emd.com
 ;flat assembler version 1.20+ need
 ;license: Public Domain
+;written by iz56 12/2014 for EMD
+ 
  
 ;macroses
        include  'inc\const.asm'
@@ -172,6 +174,7 @@ not_set_x_y:
  
 ; START - main program loop here
 NextKey:
+;call Save_Screen.reset ;reset scr.asm
        call     EraseMemory
  
  
@@ -180,6 +183,7 @@ NextKey:
        colored
 ;call EndProf
 NoRedraw:
+call Save_Screen.reset ;reset scr.asm
  
        mov      esi,dword [VideoBufMemory]
        call     DrawPage
@@ -279,12 +283,16 @@ wait_kbd:
 .noClock:
 ;</clock>
 .hltSet:
+       call     Save_Screen ;scr.asm
  
 hlt ;save CPU power :)
 ; nop
        inc      dword [CountWait]
 cmp word bx,[fs:0+041ch]
        jz       wait_kbd
+ 
+cmp byte [Save_Screen.flag],SET_ON
+jz NextKey
  
 NoWaitKBD:
 ;all press keys here
@@ -599,8 +607,6 @@ KeyInsert:
        mov      byte [InsertKeyStatus],KEY_INSERT_ON
        jmp      NoRedraw_0
  
-InsertKeyStatus db 0 ;0=enter 1=insert
- 
 ;---------------------------------------------------------------------------
 KeySpecMenu: ;F7
  
@@ -654,7 +660,8 @@ KeyHelpMenu:
  
  
 F3GotoLabel:
-       call     GotoLabel ;inc\goto.asm
+       call     f3key ;inc\keys\f3.asm
+;       call     GotoLabel ;inc\goto.asm
        jmp      NextKey
  
  
@@ -1055,9 +1062,6 @@ ExitDosInt21h:
        mov      ah,4ch
        int      21h ;-------------------main exit from program
  
-;(kод возврата для ah=4ch,int 21h)
-Exit2OsCod db 0
- 
 ;----------
 SaveXY:
  
@@ -1159,9 +1163,9 @@ WaitPressAnyKey:
        ret
 ;++++++
  
-       align    16
- 
 ; include 'inc\loging.asm'
+       include  'inc\dbg.asm' ;QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQq
+ 
  
        include  'inc\flatrm.asm'
  
@@ -1199,17 +1203,13 @@ WaitPressAnyKey:
        include  'inc\radix50\unreal\radix50.asm' ;
  
        include  'inc\form.asm'
-       include  'inc\goto.asm'
-       include  'inc\gotod.asm'
-       include  'inc\setpg.asm'
- 
  
        include  'inc\erase.asm'
        include  'inc\select.asm' ;
        include  'inc\keys\enter.asm' ;Shift+Enter
        include  'inc\keys\backsp.asm' ;Backspace
        include  'inc\keys\f5.asm'
- 
+       include  'inc\keys\f3.asm'
  
  
        include  'inc\checkf.asm'; call DebugCheckSizeFormTxt
@@ -1235,16 +1235,25 @@ WaitPressAnyKey:
        include  'inc\cls16.asm'
        include  'inc\drbytes.asm'
  
+ 
+       include  'inc\scr.asm'
+;call Save_Screen ;scr.asm
+ 
+ 
+       include  'deldir\goto.asm'
+       include  'deldir\gotod.asm'
+       include  'deldir\setpg.asm'
+ 
+ 
 FontPack:
 ; file 'inc\font\cyrillic.f8'
-       file     'inc\font\cyrillic.pak'
- 
+       file     'inc\font\cyrillic.pak' ;here rus font only for graph mode ,pack
 ; font_size = $-FontPack
 ;====
  
  
 ;;;include 'inc\pro.asm'
-       align    16
+       align    4
 ;leght of one line on page (dword)
 leghtY dd 80
 IndexPageActive dd 0
@@ -1265,8 +1274,6 @@ c8 db 0
 ;-----
  
 ptrCopyPasteBuffer dd 0 ;main ptr to paste and copy text (F5 key)
- 
-;BaseProgram dd ?
  
 ;-hide-cursor--3\
 F_waitHideCursor dd 0
@@ -1307,7 +1314,7 @@ CodError dd 0
 FlagNewFile db 0
  
        align    4
- 
+VideoLinear dd 0 ; address of video linear memory
 CountPressKbdTotal dd 0 ;all keys pressed
 CountPressKbdChar dd 0 ;chars keys pressed
  
@@ -1318,13 +1325,18 @@ SizeFile dd 0
 PtrNameFileText dw 0
 CountCHAR_ON_LINE db 0
 errors db 0 ;for debug
+Exit2OsCod db 0; for ah=4ch,int 21h
+InsertKeyStatus db 0 ;0=enter 1=insert
  
- 
-       align    32
+       align    16
 Font:
 rb SIZE_REAL_OF_FONT
  
-       align    32
+       align    4
+TmpData:
+rb 100h
+ 
+       align    16
 buf:
        rb       SIZE_READ_BUF
        rb       1000h

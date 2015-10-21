@@ -71,7 +71,6 @@ FindAndReplace:
        mov      ecx, dword [.numOfReplaces]
        mov      dword [.numOfReplaces],0
        ret      ;- - - - - - - - - - - - - - - - - - - exit
- 
 .saveEcx dd 0
 .numOfReplaces dd 0
  
@@ -246,6 +245,7 @@ IfStr1_a_Str2:
        ret
  
 .ptrToStartDel dd 0
+ 
  
  
 ;------\

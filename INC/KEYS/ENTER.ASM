@@ -118,7 +118,7 @@ mov al,byte [fs:0+00417h]
  
  
        mov      edi,eax
-       mov      [.tmp_edi],dword edi
+       mov      [.tmp_edi],dword eax ;di
        sub      eax,dword CHAR_ON_LINE
        mov      esi,eax
        pop      cx
@@ -163,7 +163,7 @@ mov al,byte [fs:0+00417h]
        ret      ; work comleted for Enter+right_Shift
  
  
-.tmp_edi dd 0
+;.tmp_edi dd 0
  
 .leftShiftPressed:
  
@@ -198,7 +198,10 @@ mov al,byte [fs:0+00417h]
  
        ret      ; work completed for Enter+left_Shift
  
+virtual at TmpData
 .tmpX db 0
+.tmp_edi dd 0
+end virtual
  
  
 .close:

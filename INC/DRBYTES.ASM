@@ -2,14 +2,14 @@
  
 DisplayReadingBytes:
  
-       display ' read: '
+display ' read: '
  
        mov      eax,[SizeFile]
-test eax,eax
-jnz .notZero
-mov dx,.zeroStr
-call PrintDosAH9
-jmp .end
+       test     eax,eax
+       jnz      .notZero
+       mov      dx,.zeroStr
+       call     PrintDosAH9
+       jmp      .end
  
 .zeroStr db '0$'
  
@@ -31,13 +31,12 @@ jmp .end
  
        mov      [si-1],byte '$'
        dec      dx
-;       dec      dx
  
        mov      ah,9
        int      21h
 .end:
-       display ' bytes. Press Any Key... '
- 
+       display  ' bytes. Press Any Key... '
        ret
  
 ;EOF
+ 
